@@ -46,8 +46,8 @@ Supported devices
 
 * Loke1
 
-Usage as library
-================
+Usage with asyncio as library
+=============================
 
 
 .. code-block:: python3
@@ -56,7 +56,7 @@ Usage as library
     client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
     await client.connect()
     await asyncio.sleep(2)
-    print(data)
+    print(data) # prints buffered data from system
 
 CLI usage
 =========
