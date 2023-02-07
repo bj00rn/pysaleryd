@@ -16,8 +16,7 @@ class Client:
         self._state = State.NONE
         self._data = {}
         self._handlers = []
-        self._client = WSClient(self._session, self._url, self._port, self._handler)
-        self._client.start()
+        self._socket = WSClient(self._session, self._url, self._port, self._handler)
 
     def add_handler(self, handler):
         """Add event handler"""
@@ -35,7 +34,7 @@ class Client:
                 self._data[key] = value
 
         elif signal == Signal.CONNECTION_STATE:
-            self._state = self._client.state
+            self._state = self._socket.state
 
     def _parse_message(self, msg):
         """parse socket message"""
@@ -56,22 +55,29 @@ class Client:
                     ]
                 key = msg[1::].split(":")[0]
                 parsed = (key, value)
-        except Exception as exc:
+        except Exception:
             _LOGGER.warning("Failed to parse message %s", msg, exc_info=True)
         return parsed
 
     @property
     def state(self):
-        return self._state
+        """Get socket state"""
+        return self._socket.state
 
     @property
     def data(self):
         """Get data"""
         return self._data
 
+    async def async_get_data(self):
+        """Async get data"""
+        return self.data
+
     async def connect(self):
-        while self._state != State.RUNNING:
-            await asyncio.sleep(0)
+        """Start socket and wait for connection"""
+        self._socket.start()
+        while self._socket.state != State.RUNNING:
+            await asyncio.sleep(1)
 
     async def send_command(self, key, value):
         """Send command to HRV"""
@@ -80,5 +86,5 @@ class Client:
             """Should probably ack command here, just sleep for now"""
             await asyncio.sleep(2)
 
-        await self._client.send_message(f"#{key}:{value}\r")
+        await self._socket.send_message(f"#{key}:{value}\r")
         await asyncio.gather(ack_command())
