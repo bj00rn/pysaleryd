@@ -135,7 +135,7 @@ def main(args):
                 await asyncio.sleep(timeout)
             else:
                 while True:
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(1)
 
     asyncio.run(listen(args.host, args.port, args.timeout))
 
