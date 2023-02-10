@@ -37,14 +37,13 @@ pysaleryd
     Python library for controlling Saleryd HRV system
 
 
-Python library for controlling Saleryd HRV system using the built in websocket server
- * Read system state
- * Send control commands
+Python library for controlling Saleryd HRV system using the built in websocket server used by Saleryd HRV Homeassistant integration https://github.com/bj00rn/ha-saleryd-ftx
+
 
 Supported devices
 ==================
 
-* Loke1
+LOKE1/Loke Basic/LS-01 using control system 4.1.1
 
 Usage with asyncio as library
 =============================
@@ -65,7 +64,14 @@ Connect to system and capture websocket data to stdout
 
 .. code-block:: shell
 
-    ./pysaleryd --host [WEBSOCKET_URL] --port [WEBSOCKET_PORT]
+    $ ./pysaleryd --host [WEBSOCKET_URL] --port [WEBSOCKET_PORT]
+
+Troubleshooting
+===============
+* Confirm system is connected and UI is reachable on the local network. Follow steps in the manual.
+* Confirm websocket port by connecting to the UI using a browser and take note of websocket port using debug console in browser. 3001 is probably default
+* The system HRV system can only handle a few connected clients. Shut down any additional clients/browsers and try again
+
 
 Disclaimer
 ==========
