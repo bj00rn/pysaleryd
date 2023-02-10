@@ -1,15 +1,12 @@
 .. These are examples of badges you might want to add to your README:
    please update the URLs accordingly
 
-    .. image:: https://api.cirrus-ci.com/github/<USER>/pysaleryd.svg?branch=main
+    .. image:: https://api.cirrus-ci.com/github/bj00rn/pysaleryd.svg?branch=main
         :alt: Built Status
-        :target: https://cirrus-ci.com/github/<USER>/pysaleryd
-    .. image:: https://readthedocs.org/projects/pysaleryd/badge/?version=latest
-        :alt: ReadTheDocs
-        :target: https://pysaleryd.readthedocs.io/en/stable/
-    .. image:: https://img.shields.io/coveralls/github/<USER>/pysaleryd/main.svg
+        :target: https://cirrus-ci.com/github/bj00rn/pysaleryd
+    .. image:: https://img.shields.io/coveralls/github/bj00rn/pysaleryd/main.svg
         :alt: Coveralls
-        :target: https://coveralls.io/r/<USER>/pysaleryd
+        :target: https://coveralls.io/r/bj00rn/pysaleryd
     .. image:: https://img.shields.io/pypi/v/pysaleryd.svg
         :alt: PyPI-Server
         :target: https://pypi.org/project/pysaleryd/
@@ -19,9 +16,6 @@
     .. image:: https://pepy.tech/badge/pysaleryd/month
         :alt: Monthly Downloads
         :target: https://pepy.tech/project/pysaleryd
-    .. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter
-        :alt: Twitter
-        :target: https://twitter.com/pysaleryd
 
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
