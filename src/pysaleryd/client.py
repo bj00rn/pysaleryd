@@ -1,10 +1,14 @@
-import logging
+"""HRV System client"""
+
 import asyncio
-from .websocket import WSClient, Signal, State
+import logging
+from typing import Callable
+
 from aiohttp import ClientSession
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+from .websocket import WSClient, Signal, State
 
+_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 class Client:
     """Client to manage communication with HRV"""
@@ -18,11 +22,11 @@ class Client:
         self._handlers = []
         self._socket = WSClient(self._session, self._url, self._port, self._handler)
 
-    def add_handler(self, handler):
+    def add_handler(self, handler: Callable[[str], None]):
         """Add event handler"""
         self._handlers.append(handler)
 
-    async def _handler(self, signal: Signal, data: dict = None, state: State = None):
+    async def _handler(self, signal: Signal, data: str, state: State = None):
         """Call handlers if data"""
         if signal == Signal.DATA:
             for handler in self._handlers:
@@ -36,7 +40,7 @@ class Client:
         elif signal == Signal.CONNECTION_STATE:
             self._state = self._socket.state
 
-    def _parse_message(self, msg):
+    def _parse_message(self, msg: str):
         """parse socket message"""
         parsed = None
 
@@ -79,7 +83,7 @@ class Client:
         while self._socket.state != State.RUNNING:
             await asyncio.sleep(1)
 
-    async def send_command(self, key, value):
+    async def send_command(self, key, value: str | int ):
         """Send command to HRV"""
 
         async def ack_command():

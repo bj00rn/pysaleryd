@@ -1,14 +1,14 @@
 """Python library to connect HRV and Home Assistant to work together."""
 
 from asyncio import create_task, get_running_loop
-from collections import deque
-from collections.abc import Callable, Coroutine
+import datetime
 import enum
 import logging
-from typing import Any, Final
-import datetime
+
+from typing import Final, Callable, Awaitable
+
 import aiohttp
-import asyncio
+
 
 LOGGER = logging.getLogger(__package__)
 
@@ -30,8 +30,6 @@ class State(enum.Enum):
 
 
 RETRY_TIMER: Final = 15
-QUEUE_LEN: Final = 100
-
 
 class WSClient:
     """Websocket transport, session handling, message generation."""
@@ -41,7 +39,7 @@ class WSClient:
         session: aiohttp.ClientSession,
         host: str,
         port: int,
-        callback
+        callback: Callable[[Signal, str | None, State | None], Awaitable[None]],
     ) -> None:
         """Create resources for websocket communication."""
         self.session = session
@@ -65,8 +63,9 @@ class WSClient:
 
     def state_changed(self) -> None:
         """Signal state change."""
-        create_task(self.session_handler_callback(
-            Signal.CONNECTION_STATE, state=self._state))
+        create_task(
+            self.session_handler_callback(Signal.CONNECTION_STATE, data=None, state=self._state)
+        )
 
     def start(self) -> None:
         """Start websocket and update its state."""
@@ -89,14 +88,14 @@ class WSClient:
             self.state_changed()
 
             async for msg in self._ws:
-
                 if self._state == State.STOPPED:
                     await self._ws.close()
                     break
 
                 if msg.type == aiohttp.WSMsgType.TEXT:
-                    create_task(self.session_handler_callback(
-                        Signal.DATA, data=msg.data))
+                    create_task(
+                        self.session_handler_callback(Signal.DATA, data=msg.data)
+                    )
                     LOGGER.debug("%s Received: %s", datetime.datetime.now(), msg.data)
                     continue
 
@@ -147,13 +146,11 @@ class WSClient:
 
         self.loop.call_later(RETRY_TIMER, self.start)
 
-    async def send_message(self, message):
+    async def send_message(self, message: str):
         """Send message to websocket"""
-        if self._state != State.RUNNING:
+        try:
+            return await self._ws.send_str(message)
+        except Exception as exc:
             raise Exception(
-                "Failed to send message {} to websocket. Socket state is {}".format(
-                    message,
-                    self.state,
-                )
-            )
-        await self._ws.send_str(message)
+                f"Failed to send message {message} to websocket. State is {self._state}"
+            ) from exc

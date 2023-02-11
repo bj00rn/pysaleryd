@@ -97,7 +97,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def setup_logging(loglevel):
+def setup_logging(loglevel: int):
     """Setup basic logging
 
     Args:
@@ -109,7 +109,7 @@ def setup_logging(loglevel):
     )
 
 
-def signal_handler(signum, frame):
+def signal_handler(signum: int, frame):
     """Signal handler"""
     _logger.debug("Received signal %s, exiting..", signum)
     sys.exit(0)
@@ -122,11 +122,11 @@ def main(args):
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    def handle_data(data=None):
+    def handle_data(data: str):
         if data:
             print(data)
 
-    async def listen(host, port, timeout):
+    async def listen(host: str, port: int, timeout: int):
         async with ClientSession() as session:
             client = Client(host, port, session)
             client.add_handler(handle_data)
