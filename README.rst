@@ -86,7 +86,13 @@ Connect to system and capture websocket data to stdout
 
 .. code-block:: shell
 
-    $ ./pysaleryd --host [WEBSOCKET_URL] --port [WEBSOCKET_PORT]
+    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT [-t TIMEOUT] 
+
+Send command to system
+
+.. code-block:: shell
+
+    $ pysaleryd --host 192.168.1.151 --port 3001 --send --key MF --data 0
 
 Troubleshooting
 ===============

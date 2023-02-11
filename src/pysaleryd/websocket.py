@@ -82,7 +82,7 @@ class WSClient:
             LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
             self._ws = await self.session.ws_connect(url, timeout=10)
             LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
-            await self._ws.send_str("#\r")
+            await self._ws.send_str("#\r") # server won't start sending unless data is received
             await self._ws.receive_str()
             self.set_state(State.RUNNING)
             self.state_changed()

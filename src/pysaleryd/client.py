@@ -83,6 +83,10 @@ class Client:
         while self._socket.state != State.RUNNING:
             await asyncio.sleep(1)
 
+    def stop(self):
+        """Stop socket"""
+        self._socket.stop()
+
     async def send_command(self, key, value: str | int ):
         """Send command to HRV"""
 

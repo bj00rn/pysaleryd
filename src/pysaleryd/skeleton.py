@@ -71,9 +71,7 @@ def parse_args(args):
         "--port", dest="port", help="port number", type=int, metavar="INT", required=True
     )
     parser.add_argument("--host", dest="host", help="host", type=str, required=True)
-    parser.add_argument(
-        "-t", dest="timeout", help="timeout", type=int, metavar="INT", default=None
-    )
+    
 
     parser.add_argument(
         "-v",
@@ -91,8 +89,15 @@ def parse_args(args):
         action="store_const",
         const=logging.DEBUG,
     )
-
-    parser.add_argument("--send", dest="data", type=str, help="command to send to the system")
+    listen = parser.add_argument_group()
+    listen.add_argument("--listen", action="store_true", help="print incoming messages")
+    listen.add_argument(
+        "-t", dest="timeout", help="listen timeout", type=int, metavar="INT", default=5
+    )
+    send = parser.add_argument_group()
+    send.add_argument("--send", action="store_true", help="send command to the system")
+    send.add_argument("--key", type=str, dest="send_key", help="command key")
+    send.add_argument("--data", type=str, dest="send_data", help="command data")
 
     return parser.parse_args(args)
 
@@ -122,22 +127,22 @@ def main(args):
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    def handle_data(data: str):
-        if data:
-            print(data)
-
-    async def listen(host: str, port: int, timeout: int):
+    async def runner(args):
         async with ClientSession() as session:
-            client = Client(host, port, session)
-            client.add_handler(handle_data)
+            client = Client(args.host, args.port, session)
             await client.connect()
-            if timeout:
-                await asyncio.sleep(timeout)
-            else:
-                while True:
-                    await asyncio.sleep(1)
+            if args.send:
+                if not isinstance(args.send_key, str):
+                    raise Exception("Invalid key supplied")
+                if not isinstance(args.send_data, str):
+                    raise Exception("Invalid data supplied")
+                await client.send_command(args.send_key, args.send_data)
+            if args.listen:
+                await asyncio.sleep(args.timeout)
+                print(client.data)
+            client.stop()
 
-    asyncio.run(listen(args.host, args.port, args.timeout))
+    asyncio.run(runner(args))
 
 
 def run():
