@@ -43,13 +43,41 @@ Usage with asyncio as library
 =============================
 
 
+Read data
+---------
+
 .. code-block:: python3
 
     from pysaleryd.client import Client
     client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
     await client.connect()
-    await asyncio.sleep(2)
-    print(data) # prints buffered data from system
+    await asyncio.sleep(2) # wait a bit for some data
+    await print(client.data)
+
+Read data using callback
+------------------------
+
+.. code-block:: python3
+    
+    from pysaleryd.client import Client
+    client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
+
+    def handle_messge(raw_message: str):
+        print(msg)
+    
+    client.add_handler(handle_message)
+    await client.connect()
+    await asyncio.sleep(10) # wait around a bit
+
+Send control command
+--------------------
+
+.. code-block:: python3
+
+    from pysaleryd.client import Client
+    client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
+    await client.connect()
+    await client.send_command("MF", 0) # send command to set fan mode
 
 CLI usage
 =========
