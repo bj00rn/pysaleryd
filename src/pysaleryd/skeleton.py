@@ -7,7 +7,7 @@ console script. To run this script uncomment the following lines in the
          pysaleryd = pysaleryd.skeleton:run
 
 Then run ``pip install .`` (or ``pip install -e .`` for editable mode)
-which will install the command ``fibonacci`` inside your current environment.
+which will install the command ``pysaleryd`` inside your current environment.
 
 Besides console scripts, the header (i.e. until ``_logger``...) of this file can
 also be used as template for Python modules.
@@ -37,14 +37,6 @@ __license__ = "MIT"
 
 _logger = logging.getLogger(__name__)
 
-
-# ---- Python API ----
-# The functions defined in this section can be imported by users in their
-# Python scripts/interactive interpreter, e.g. via
-# `from pysaleryd.skeleton import fib`,
-# when using this Python module as a library.
-
-
 # ---- CLI ----
 # The functions defined in this section are wrappers around the main Python
 # API allowing them to be called directly from the terminal as a CLI
@@ -61,7 +53,7 @@ def parse_args(args):
     Returns:
       :obj:`argparse.Namespace`: command line parameters namespace
     """
-    parser = argparse.ArgumentParser(description="Just a Fibonacci demonstration")
+    parser = argparse.ArgumentParser(description=f"Saleryd HRV Client {__version__}")
     parser.add_argument(
         "--version",
         action="version",
@@ -71,7 +63,6 @@ def parse_args(args):
         "--port", dest="port", help="port number", type=int, metavar="INT", required=True
     )
     parser.add_argument("--host", dest="host", help="host", type=str, required=True)
-    
 
     parser.add_argument(
         "-v",
@@ -129,18 +120,16 @@ def main(args):
 
     async def runner(args):
         async with ClientSession() as session:
-            client = Client(args.host, args.port, session)
-            await client.connect()
-            if args.send:
-                if not isinstance(args.send_key, str):
-                    raise Exception("Invalid key supplied")
-                if not isinstance(args.send_data, str):
-                    raise Exception("Invalid data supplied")
-                await client.send_command(args.send_key, args.send_data)
-            if args.listen:
-                await asyncio.sleep(args.timeout)
-                print(client.data)
-            client.stop()
+            async with Client(args.host, args.port, session) as hrv_client:
+                if args.send:
+                    if not isinstance(args.send_key, str):
+                        raise Exception("Invalid key supplied")
+                    if not isinstance(args.send_data, str):
+                        raise Exception("Invalid data supplied")
+                    await hrv_client.send_command(args.send_key, args.send_data)
+                if args.listen:
+                    await asyncio.sleep(args.timeout)
+                    print(hrv_client.data)
 
     asyncio.run(runner(args))
 

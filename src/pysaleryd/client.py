@@ -22,6 +22,16 @@ class Client:
         self._handlers = []
         self._socket = WSClient(self._session, self._url, self._port, self._handler)
 
+    async def __aenter__(self):
+        """Start socket and wait for connection"""
+        self._socket.start()
+        while self._socket.state != State.RUNNING:
+            await asyncio.sleep(0.2)
+        return self
+
+    async def __aexit__(self, type, value, traceback):
+        self._socket.stop()
+
     def add_handler(self, handler: Callable[[str], None]):
         """Add event handler"""
         self._handlers.append(handler)
@@ -76,16 +86,6 @@ class Client:
     async def async_get_data(self):
         """Async get data"""
         return self.data
-
-    async def connect(self):
-        """Start socket and wait for connection"""
-        self._socket.start()
-        while self._socket.state != State.RUNNING:
-            await asyncio.sleep(1)
-
-    def stop(self):
-        """Stop socket"""
-        self._socket.stop()
 
     async def send_command(self, key, value: str | int ):
         """Send command to HRV"""

@@ -48,39 +48,52 @@ Read data
 
 .. code-block:: python3
 
+    import asyncio
+
     from pysaleryd.client import Client
-    client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
-    await client.connect()
-    await asyncio.sleep(2) # wait a bit for some data
-    await print(client.data)
+
+    async with Client(WEBSOCKET_URL, WEBSOCKET_PORT) as hrv_client:
+        await asyncio.sleep(2) # wait a bit for some data
+        print(client.data)
 
 Read data using callback
 ------------------------
 
 .. code-block:: python3
-    
+
+    import asyncio
+
     from pysaleryd.client import Client
-    client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
 
     def handle_messge(raw_message: str):
         print(msg)
-    
-    client.add_handler(handle_message)
-    await client.connect()
-    await asyncio.sleep(10) # wait around a bit
+
+    async with Client(WEBSOCKET_URL, WEBSOCKET_PORT) as hrv_client:
+        hrv_client.add_handler(handle_message)
+        await asyncio.sleep(3) # wait around a bit for data
 
 Send control command
 --------------------
+Command syntax can be found by disecting websocket messages in the built in web ui
 
 .. code-block:: python3
 
+    import asyncio
+
     from pysaleryd.client import Client
-    client = Client(WEBSOCKET_URL, WEBSOCKET_PORT)
-    await client.connect()
-    await client.send_command("MF", 0) # send command to set fan mode
+
+    async with Client(WEBSOCKET_URL, WEBSOCKET_PORT) as hrv_client:
+        await hrv_client.send_command("MF", 0) # send command to set fan mode
 
 CLI usage
 =========
+
+List command line usage
+
+.. code-block:: shell
+
+    $ pysaleryd -h 
+
 
 Connect to system and capture websocket data to stdout
 

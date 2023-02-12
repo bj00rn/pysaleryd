@@ -10,7 +10,7 @@ from typing import Final, Callable, Awaitable
 import aiohttp
 
 
-LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__package__)
 
 
 class Signal(enum.Enum):
@@ -30,6 +30,7 @@ class State(enum.Enum):
 
 
 RETRY_TIMER: Final = 15
+
 
 class WSClient:
     """Websocket transport, session handling, message generation."""
@@ -64,7 +65,8 @@ class WSClient:
     def state_changed(self) -> None:
         """Signal state change."""
         create_task(
-            self.session_handler_callback(Signal.CONNECTION_STATE, data=None, state=self._state)
+            self.session_handler_callback(
+                Signal.CONNECTION_STATE, data=None, state=self._state)
         )
 
     def start(self) -> None:
@@ -79,10 +81,11 @@ class WSClient:
         url = f"http://{self.host}:{self.port}"
 
         try:
-            LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
+            _LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
             self._ws = await self.session.ws_connect(url, timeout=10)
-            LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
-            await self._ws.send_str("#\r") # server won't start sending unless data is received
+            _LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
+            # server won't start sending unless data is received
+            await self._ws.send_str("#\r")
             await self._ws.receive_str()
             self.set_state(State.RUNNING)
             self.state_changed()
@@ -92,28 +95,33 @@ class WSClient:
                     await self._ws.close()
                     break
 
-                if msg.type == aiohttp.WSMsgType.TEXT:
-                    create_task(
-                        self.session_handler_callback(Signal.DATA, data=msg.data)
-                    )
-                    LOGGER.debug("%s Received: %s", datetime.datetime.now(), msg.data)
-                    continue
-
                 if msg.type == aiohttp.WSMsgType.CLOSED:
-                    LOGGER.warning("Connection closed (%s)", self.host)
+                    _LOGGER.warning(
+                        "Connection to websocket closed by remote (%s)", self.host)
                     break
 
                 if msg.type == aiohttp.WSMsgType.ERROR:
-                    LOGGER.error("Websocket error (%s)", self.host)
+                    _LOGGER.error("Websocket error (%s)", self.host)
                     break
+
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    _LOGGER.debug("Received: %s", msg.data)
+                    create_task(
+                        self.session_handler_callback(Signal.DATA, data=msg.data)
+                    )
+                    continue
+
+                if msg.type != aiohttp.WSMsgType.TEXT:
+                    _LOGGER.debug("Received unexpected message type: %s", msg.type)
+                    continue
 
         except aiohttp.ClientConnectorError:
             if self._state != State.RETRYING:
-                LOGGER.error("Websocket is not accessible (%s)", self.host)
+                _LOGGER.error("Websocket is not accessible (%s)", self.host)
 
         except Exception as err:
             if self._state != State.RETRYING:
-                LOGGER.error("Unexpected error (%s) %s", self.host, err)
+                _LOGGER.error("Unexpected error (%s) %s", self.host, err)
 
         if self._state != State.STOPPED:
             self.retry()
@@ -121,7 +129,7 @@ class WSClient:
     def stop(self) -> None:
         """Close websocket connection."""
         self.set_state(State.STOPPED)
-        LOGGER.info("Shutting down connection to websocket (%s)", self.host)
+        _LOGGER.info("Shutting down connection to websocket (%s)", self.host)
 
     def retry(self) -> None:
         """Retry to connect to websocket.
@@ -130,7 +138,7 @@ class WSClient:
         Signal state change only after first retry fails.
         """
         if self._state == State.RETRYING and self._previous_state == State.RUNNING:
-            LOGGER.info(
+            _LOGGER.info(
                 "Reconnecting to websocket (%s) failed, scheduling retry at an interval of %i seconds",
                 self.host,
                 RETRY_TIMER,
@@ -140,7 +148,7 @@ class WSClient:
         self.set_state(State.RETRYING)
 
         if self._previous_state == State.RUNNING:
-            LOGGER.info("Reconnecting to websocket (%s)", self.host)
+            _LOGGER.info("Reconnecting to websocket (%s)", self.host)
             self.start()
             return
 
@@ -149,6 +157,7 @@ class WSClient:
     async def send_message(self, message: str):
         """Send message to websocket"""
         try:
+            _LOGGER.debug("Sending message %s to websocket", message)
             return await self._ws.send_str(message)
         except Exception as exc:
             raise Exception(
