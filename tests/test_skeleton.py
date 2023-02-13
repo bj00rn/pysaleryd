@@ -22,4 +22,4 @@ def test_main(capsys):
     # https://docs.pytest.org/en/stable/capture.html
     main(["--host", "192.168.1.151", "--port", "3001", "-t", "3"])
     captured = capsys.readouterr()
-    assert True
+    assert not captured.err
