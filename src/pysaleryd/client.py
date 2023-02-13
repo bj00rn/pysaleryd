@@ -61,7 +61,7 @@ class Client:
                 try:
                     handler(data)
                 except Exception as exc:
-                    _LOGGER.warn("Failed to call handler", exc_info=True)
+                    _LOGGER.warning("Failed to call handler", exc_info=True)
 
     @property
     def state(self):

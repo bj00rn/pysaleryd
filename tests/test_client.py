@@ -29,6 +29,10 @@ async def test_client_connect(hrv_client):
 async def test_handler(hrv_client, mocker):
     """Test handler callback"""
     handler = mocker.Mock()
+    def broken_handler(data):
+        raise Exception()
+    
+    hrv_client.add_handler(broken_handler)
     hrv_client.add_handler(handler)
     await asyncio.sleep(3)
     handler.assert_called()
@@ -50,3 +54,10 @@ async def test_reconnect(hrv_client, mocker):
 async def test_send_command(hrv_client, mocker):
     """Test send command"""
     await hrv_client.send_command("MF", "0")
+
+@pytest.mark.asyncio
+async def test_disconnect(hrv_client: Client, mocker):
+    """Test send command"""
+    await hrv_client.connect()
+    hrv_client.disconnect()
+    await asyncio.sleep(2)
