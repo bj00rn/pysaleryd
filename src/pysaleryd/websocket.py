@@ -1,7 +1,6 @@
 """Python library to connect HRV and Home Assistant to work together."""
 
 from asyncio import create_task, get_running_loop
-import datetime
 import enum
 import logging
 
