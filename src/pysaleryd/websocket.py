@@ -111,7 +111,7 @@ class WSClient:
                     continue
 
                 if msg.type != aiohttp.WSMsgType.TEXT:
-                    _LOGGER.debug("Received unexpected message type: %s", msg.type)
+                    _LOGGER.warning("Received unexpected message type: %s", msg.type)
                     continue
 
         except aiohttp.ClientConnectorError:

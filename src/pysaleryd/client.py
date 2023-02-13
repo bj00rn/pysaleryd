@@ -7,6 +7,7 @@ from typing import Callable
 from aiohttp import ClientSession
 
 from .websocket import WSClient, Signal, State
+from .utils import ParseError, Parser
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -20,6 +21,7 @@ class Client:
         self._data = {}
         self._handlers = []
         self._socket = WSClient(self._session, self._url, self._port, self._handler)
+        self._parser = Parser()
 
     async def __aenter__(self):
         """Start socket and wait for connection"""
@@ -27,7 +29,7 @@ class Client:
         return self
 
     async def __aexit__(self, type, value, traceback):
-        self._socket.stop()
+        self.disconnect()
 
     async def connect(self):
         """Connect to system and wait for connection"""
@@ -49,43 +51,21 @@ class Client:
     async def _handler(self, signal: Signal, data: str, state: State = None):
         """Call handlers if data"""
         if signal == Signal.DATA:
+            try:
+                (key, value) = self._parser.from_str(data)
+                self._data[key] = value
+            except ParseError:
+                pass
+
             for handler in self._handlers:
                 try:
                     handler(data)
                 except Exception as exc:
                     _LOGGER.warn("Failed to call handler", exc_info=True)
 
-            parsed_message = self._parse_message(data)
-            if parsed_message:
-                (key, value) = parsed_message
-                self._data[key] = value
-
-    def _parse_message(self, msg: str):
-        """parse socket message"""
-        parsed = None
-
-        try:
-            if msg[0] == "#":
-                if msg[1] == "$":
-                    # ack message, strip ack char and treat as state update
-                    msg = msg[1::]
-                value = msg[1::].split(":")[1].strip()
-                if msg[1] != "*":
-                    # messages not beginning with * are arrays of integers
-                    # [value, min, max] or [value, min, max, time_left]
-                    value = [
-                        int(v.strip()) if v.strip().isnumeric() else v.strip()
-                        for v in value.split("+")
-                    ]
-                key = msg[1::].split(":")[0]
-                parsed = (key, value)
-        except Exception:
-            _LOGGER.warning("Failed to parse message %s", msg, exc_info=True)
-        return parsed
-
     @property
     def state(self):
-        """Get socket state"""
+        """Get socket internal socket state"""
         return self._socket.state
 
     @property
@@ -99,10 +79,10 @@ class Client:
 
     async def send_command(self, key, value: str | int):
         """Send command to HRV"""
-
+        message = self._parser.to_str(key, value)
         async def ack_command():
             """Should probably ack command here, just sleep for now"""
             await asyncio.sleep(2)
 
-        await self._socket.send_message(f"#{key}:{value}\r")
+        await self._socket.send_message(message)
         await asyncio.gather(ack_command())
