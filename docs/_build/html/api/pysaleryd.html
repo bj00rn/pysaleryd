@@ -1,0 +1,376 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>pysaleryd package &#8212; pysaleryd 3.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="pysaleryd" href="modules.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pysaleryd-package">
+<h1>pysaleryd package<a class="headerlink" href="#pysaleryd-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-pysaleryd.client">
+<span id="pysaleryd-client-module"></span><h2>pysaleryd.client module<a class="headerlink" href="#module-pysaleryd.client" title="Permalink to this heading">¶</a></h2>
+<p>HRV System client</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pysaleryd.client.Client">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pysaleryd.client.</span></span><span class="sig-name descname"><span class="pre">Client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ClientSession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/client.html#Client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.client.Client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.10/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Client to manage communication with HRV</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.add_handler">
+<span class="sig-name descname"><span class="pre">add_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/client.html#Client.add_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.client.Client.add_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add event handler</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.async_get_data">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">async_get_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/client.html#Client.async_get_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.client.Client.async_get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Async get data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/client.html#Client.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.client.Client.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to system and wait for connection</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#pysaleryd.client.Client.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.disconnect">
+<span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/client.html#Client.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.client.Client.disconnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disconnect from system</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.send_command">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">send_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/client.html#Client.send_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.client.Client.send_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send command to HRV</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pysaleryd.client.Client.state">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><a class="headerlink" href="#pysaleryd.client.Client.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get socket internal socket state</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-pysaleryd.skeleton">
+<span id="pysaleryd-skeleton-module"></span><h2>pysaleryd.skeleton module<a class="headerlink" href="#module-pysaleryd.skeleton" title="Permalink to this heading">¶</a></h2>
+<p>This is a skeleton file that can serve as a starting point for a Python
+console script. To run this script uncomment the following lines in the
+<code class="docutils literal notranslate"><span class="pre">[options.entry_points]</span></code> section in <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">console_scripts</span> <span class="o">=</span>
+     <span class="n">pysaleryd</span> <span class="o">=</span> <span class="n">pysaleryd</span><span class="o">.</span><span class="n">skeleton</span><span class="p">:</span><span class="n">run</span>
+</pre></div>
+</div>
+<p>Then run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> (or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> for editable mode)
+which will install the command <code class="docutils literal notranslate"><span class="pre">pysaleryd</span></code> inside your current environment.</p>
+<p>Besides console scripts, the header (i.e. until <code class="docutils literal notranslate"><span class="pre">_logger</span></code>…) of this file can
+also be used as template for Python modules.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This file can be renamed depending on your needs or safely removed if not needed.</p>
+</div>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://setuptools.pypa.io/en/latest/userguide/entry_point.html">https://setuptools.pypa.io/en/latest/userguide/entry_point.html</a></p></li>
+<li><p><a class="reference external" href="https://pip.pypa.io/en/stable/reference/pip_install">https://pip.pypa.io/en/stable/reference/pip_install</a></p></li>
+</ul>
+<dl class="py function">
+<dt class="sig sig-object py" id="pysaleryd.skeleton.main">
+<span class="sig-prename descclassname"><span class="pre">pysaleryd.skeleton.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/skeleton.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.skeleton.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main program</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pysaleryd.skeleton.parse_args">
+<span class="sig-prename descclassname"><span class="pre">pysaleryd.skeleton.</span></span><span class="sig-name descname"><span class="pre">parse_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/skeleton.html#parse_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.skeleton.parse_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse command line parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>]</em>) – command line parameters as list of strings
+(for example  <code class="docutils literal notranslate"><span class="pre">[&quot;--help&quot;]</span></code>).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>command line parameters namespace</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.10/library/argparse.html#argparse.Namespace" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">argparse.Namespace</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pysaleryd.skeleton.run">
+<span class="sig-prename descclassname"><span class="pre">pysaleryd.skeleton.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/skeleton.html#run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.skeleton.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls <a class="reference internal" href="#pysaleryd.skeleton.main" title="pysaleryd.skeleton.main"><code class="xref py py-func docutils literal notranslate"><span class="pre">main()</span></code></a> passing the CLI arguments extracted from <a class="reference external" href="https://docs.python.org/3.10/library/sys.html#sys.argv" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sys.argv</span></code></a></p>
+<p>This function can be used as entry point to create console scripts with setuptools.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pysaleryd.skeleton.setup_logging">
+<span class="sig-prename descclassname"><span class="pre">pysaleryd.skeleton.</span></span><span class="sig-name descname"><span class="pre">setup_logging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loglevel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/skeleton.html#setup_logging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.skeleton.setup_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup basic logging</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>loglevel</strong> (<a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – minimum loglevel for emitting messages</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pysaleryd.skeleton.signal_handler">
+<span class="sig-prename descclassname"><span class="pre">pysaleryd.skeleton.</span></span><span class="sig-name descname"><span class="pre">signal_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/skeleton.html#signal_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.skeleton.signal_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Signal handler</p>
+</dd></dl>
+
+</section>
+<section id="module-pysaleryd.utils">
+<span id="pysaleryd-utils-module"></span><h2>pysaleryd.utils module<a class="headerlink" href="#module-pysaleryd.utils" title="Permalink to this heading">¶</a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="pysaleryd.utils.ParseError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pysaleryd.utils.</span></span><span class="sig-name descname"><span class="pre">ParseError</span></span><a class="reference internal" href="../_modules/pysaleryd/utils.html#ParseError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.utils.ParseError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.10/library/exceptions.html#BaseException" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseException</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pysaleryd.utils.Parser">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pysaleryd.utils.</span></span><span class="sig-name descname"><span class="pre">Parser</span></span><a class="reference internal" href="../_modules/pysaleryd/utils.html#Parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.utils.Parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.10/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.utils.Parser.from_str">
+<span class="sig-name descname"><span class="pre">from_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/utils.html#Parser.from_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.utils.Parser.from_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse message</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.utils.Parser.to_str">
+<span class="sig-name descname"><span class="pre">to_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/utils.html#Parser.to_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.utils.Parser.to_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-pysaleryd.websocket">
+<span id="pysaleryd-websocket-module"></span><h2>pysaleryd.websocket module<a class="headerlink" href="#module-pysaleryd.websocket" title="Permalink to this heading">¶</a></h2>
+<p>Python library to connect HRV and Home Assistant to work together.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pysaleryd.websocket.Signal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pysaleryd.websocket.</span></span><span class="sig-name descname"><span class="pre">Signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#Signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.Signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.10/library/enum.html#enum.Enum" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
+<p>What is the content of the callback.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pysaleryd.websocket.Signal.CONNECTION_STATE">
+<span class="sig-name descname"><span class="pre">CONNECTION_STATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'state'</span></em><a class="headerlink" href="#pysaleryd.websocket.Signal.CONNECTION_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pysaleryd.websocket.Signal.DATA">
+<span class="sig-name descname"><span class="pre">DATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'data'</span></em><a class="headerlink" href="#pysaleryd.websocket.Signal.DATA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pysaleryd.websocket.State">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pysaleryd.websocket.</span></span><span class="sig-name descname"><span class="pre">State</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#State"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.State" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.10/library/enum.html#enum.Enum" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
+<p>State of the connection.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pysaleryd.websocket.State.NONE">
+<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#pysaleryd.websocket.State.NONE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pysaleryd.websocket.State.RETRYING">
+<span class="sig-name descname"><span class="pre">RETRYING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'retrying'</span></em><a class="headerlink" href="#pysaleryd.websocket.State.RETRYING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pysaleryd.websocket.State.RUNNING">
+<span class="sig-name descname"><span class="pre">RUNNING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'running'</span></em><a class="headerlink" href="#pysaleryd.websocket.State.RUNNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pysaleryd.websocket.State.STOPPED">
+<span class="sig-name descname"><span class="pre">STOPPED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'stopped'</span></em><a class="headerlink" href="#pysaleryd.websocket.State.STOPPED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pysaleryd.websocket.</span></span><span class="sig-name descname"><span class="pre">WSClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ClientSession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#pysaleryd.websocket.Signal" title="pysaleryd.websocket.Signal"><span class="pre">Signal</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#pysaleryd.websocket.State" title="pysaleryd.websocket.State"><span class="pre">State</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Awaitable" title="(in Python v3.10)"><span class="pre">Awaitable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.10/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Websocket transport, session handling, message generation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.retry">
+<span class="sig-name descname"><span class="pre">retry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.retry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.retry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retry to connect to websocket.</p>
+<p>Do an immediate retry without timer and without signalling state change.
+Signal state change only after first retry fails.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.running">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">running</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.running"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.running" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start websocket connection.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.send_message">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">send_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.send_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.send_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send message to websocket</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.set_state">
+<span class="sig-name descname"><span class="pre">set_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pysaleryd.websocket.State" title="pysaleryd.websocket.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.set_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set state of websocket and store previous state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start websocket and update its state.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.state">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#pysaleryd.websocket.State" title="pysaleryd.websocket.State"><span class="pre">State</span></a></em><a class="headerlink" href="#pysaleryd.websocket.WSClient.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>State of websocket.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.state_changed">
+<span class="sig-name descname"><span class="pre">state_changed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.state_changed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.state_changed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Signal state change.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pysaleryd.websocket.WSClient.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/pysaleryd/websocket.html#WSClient.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pysaleryd.websocket.WSClient.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close websocket connection.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-pysaleryd">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pysaleryd" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">pysaleryd</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributions &amp; Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Module Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pysaleryd package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">pysaleryd</a><ul>
+      <li>Previous: <a href="modules.html" title="previous chapter">pysaleryd</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Björn Dalfors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/api/pysaleryd.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

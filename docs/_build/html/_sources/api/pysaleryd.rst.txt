@@ -1,0 +1,45 @@
+pysaleryd package
+=================
+
+Submodules
+----------
+
+pysaleryd.client module
+-----------------------
+
+.. automodule:: pysaleryd.client
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pysaleryd.skeleton module
+-------------------------
+
+.. automodule:: pysaleryd.skeleton
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pysaleryd.utils module
+----------------------
+
+.. automodule:: pysaleryd.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pysaleryd.websocket module
+--------------------------
+
+.. automodule:: pysaleryd.websocket
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: pysaleryd
+   :members:
+   :undoc-members:
+   :show-inheritance:

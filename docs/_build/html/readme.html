@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>pysaleryd &#8212; pysaleryd 3.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing" href="contributing.html" />
+    <link rel="prev" title="pysaleryd" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <span class="target" id="readme"></span><a class="reference external image-reference" href="https://pyscaffold.org/"><img alt="Project generated with PyScaffold" src="https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<section id="pysaleryd">
+<h1>pysaleryd<a class="headerlink" href="#pysaleryd" title="Permalink to this heading">¶</a></h1>
+<blockquote>
+<div><p>Python library for controlling Saleryd HRV system</p>
+</div></blockquote>
+<p>Python library for controlling Saleryd HRV system using the built in websocket server used by Saleryd HRV Homeassistant integration <a class="reference external" href="https://github.com/bj00rn/ha-saleryd-ftx">https://github.com/bj00rn/ha-saleryd-ftx</a></p>
+<section id="supported-devices">
+<h2>Supported devices<a class="headerlink" href="#supported-devices" title="Permalink to this heading">¶</a></h2>
+<p>LOKE1/Loke Basic/LS-01 using control system 4.1.1</p>
+</section>
+<section id="usage-with-asyncio-as-library">
+<h2>Usage with asyncio as library<a class="headerlink" href="#usage-with-asyncio-as-library" title="Permalink to this heading">¶</a></h2>
+<section id="read-data">
+<h3>Read data<a class="headerlink" href="#read-data" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="kn">from</span> <span class="nn">pysaleryd.client</span> <span class="kn">import</span> <span class="n">Client</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">WEBSOCKET_URL</span><span class="p">,</span> <span class="n">WEBSOCKET_PORT</span><span class="p">)</span> <span class="k">as</span> <span class="n">hrv_client</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># wait a bit for some data</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="read-data-using-callback">
+<h3>Read data using callback<a class="headerlink" href="#read-data-using-callback" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="kn">from</span> <span class="nn">pysaleryd.client</span> <span class="kn">import</span> <span class="n">Client</span>
+
+<span class="k">def</span> <span class="nf">handle_messge</span><span class="p">(</span><span class="n">raw_message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">WEBSOCKET_URL</span><span class="p">,</span> <span class="n">WEBSOCKET_PORT</span><span class="p">)</span> <span class="k">as</span> <span class="n">hrv_client</span><span class="p">:</span>
+    <span class="n">hrv_client</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">handle_message</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="c1"># wait around a bit for data</span>
+</pre></div>
+</div>
+</section>
+<section id="send-control-command">
+<h3>Send control command<a class="headerlink" href="#send-control-command" title="Permalink to this heading">¶</a></h3>
+<p>Command syntax can be found by disecting websocket messages in the built in web ui</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="kn">from</span> <span class="nn">pysaleryd.client</span> <span class="kn">import</span> <span class="n">Client</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">WEBSOCKET_URL</span><span class="p">,</span> <span class="n">WEBSOCKET_PORT</span><span class="p">)</span> <span class="k">as</span> <span class="n">hrv_client</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">hrv_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s2">&quot;MF&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># send command to set fan mode</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cli-usage">
+<h2>CLI usage<a class="headerlink" href="#cli-usage" title="Permalink to this heading">¶</a></h2>
+<p>List command line usage</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pysaleryd<span class="w"> </span>-h
+</pre></div>
+</div>
+<p>Connect to system and capture websocket data to stdout</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pysaleryd<span class="w"> </span>--host<span class="w"> </span>WEBSOCKET_URL<span class="w"> </span>--port<span class="w"> </span>WEBSOCKET_PORT<span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TIMEOUT<span class="o">]</span>
+</pre></div>
+</div>
+<p>Send command to system</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pysaleryd<span class="w"> </span>--host<span class="w"> </span><span class="m">192</span>.168.1.151<span class="w"> </span>--port<span class="w"> </span><span class="m">3001</span><span class="w"> </span>--send<span class="w"> </span>--key<span class="w"> </span>MF<span class="w"> </span>--data<span class="w"> </span><span class="m">0</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Confirm system is connected and UI is reachable on the local network. Follow steps in the manual.</p></li>
+<li><p>Confirm websocket port by connecting to the UI using a browser and take note of websocket port using debug console in browser. 3001 is probably default</p></li>
+<li><p>The system HRV system can only handle a few connected clients. Shut down any additional clients/browsers and try again</p></li>
+</ul>
+</section>
+<section id="disclaimer">
+<h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Permalink to this heading">¶</a></h2>
+<p>Use at own risk.</p>
+<p>This project is in no way affiliated with the manufacturer.</p>
+<p>All product names, logos, and brands are property of their respective owners. All company, product and service names used are for identification purposes only. Use of these names, logos, and brands does not imply endorsement.</p>
+</section>
+<section id="note">
+<span id="pyscaffold-notes"></span><h2>Note<a class="headerlink" href="#note" title="Permalink to this heading">¶</a></h2>
+<p>This project has been set up using PyScaffold 4.4. For details and usage
+information on PyScaffold see <a class="reference external" href="https://pyscaffold.org/">https://pyscaffold.org/</a>.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">pysaleryd</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#supported-devices">Supported devices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usage-with-asyncio-as-library">Usage with asyncio as library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cli-usage">CLI usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#disclaimer">Disclaimer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributions &amp; Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Module Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">pysaleryd</a></li>
+      <li>Next: <a href="contributing.html" title="next chapter">Contributing</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Björn Dalfors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/readme.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

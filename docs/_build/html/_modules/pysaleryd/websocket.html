@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pysaleryd.websocket &#8212; pysaleryd 3.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pysaleryd.websocket</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Python library to connect HRV and Home Assistant to work together.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">create_task</span><span class="p">,</span> <span class="n">get_running_loop</span>
+<span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Final</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Awaitable</span>
+
+<span class="kn">import</span> <span class="nn">aiohttp</span>
+
+
+<span class="n">_LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__package__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Signal"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.Signal">[docs]</a><span class="k">class</span> <span class="nc">Signal</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;What is the content of the callback.&quot;&quot;&quot;</span>
+
+    <span class="n">CONNECTION_STATE</span> <span class="o">=</span> <span class="s2">&quot;state&quot;</span>
+    <span class="n">DATA</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span></div>
+
+
+<div class="viewcode-block" id="State"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.State">[docs]</a><span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;State of the connection.&quot;&quot;&quot;</span>
+
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">RETRYING</span> <span class="o">=</span> <span class="s2">&quot;retrying&quot;</span>
+    <span class="n">RUNNING</span> <span class="o">=</span> <span class="s2">&quot;running&quot;</span>
+    <span class="n">STOPPED</span> <span class="o">=</span> <span class="s2">&quot;stopped&quot;</span></div>
+
+
+<span class="n">RETRY_TIMER</span><span class="p">:</span> <span class="n">Final</span> <span class="o">=</span> <span class="mi">15</span>
+
+
+<div class="viewcode-block" id="WSClient"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient">[docs]</a><span class="k">class</span> <span class="nc">WSClient</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Websocket transport, session handling, message generation.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">State</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create resources for websocket communication.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_handler_callback</span> <span class="o">=</span> <span class="n">callback</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">NONE</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;State of websocket.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span>
+
+<div class="viewcode-block" id="WSClient.set_state"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set state of websocket and store previous state.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_previous_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="WSClient.state_changed"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.state_changed">[docs]</a>    <span class="k">def</span> <span class="nf">state_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Signal state change.&quot;&quot;&quot;</span>
+        <span class="n">create_task</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session_handler_callback</span><span class="p">(</span>
+                <span class="n">Signal</span><span class="o">.</span><span class="n">CONNECTION_STATE</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="WSClient.start"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start websocket and update its state.&quot;&quot;&quot;</span>
+        <span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="WSClient.running"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.running">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start websocket connection.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">==</span> <span class="n">State</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Connecting to websocket (</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">ws_connect</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+            <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Connected to websocket (</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+            <span class="c1"># server won&#39;t start sending unless data is received</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">send_str</span><span class="p">(</span><span class="s2">&quot;#</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">receive_str</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_changed</span><span class="p">()</span>
+
+            <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">==</span> <span class="n">State</span><span class="o">.</span><span class="n">STOPPED</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">WSMsgType</span><span class="o">.</span><span class="n">CLOSED</span><span class="p">:</span>
+                    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Connection to websocket closed by remote (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">WSMsgType</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span>
+                    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Websocket error (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">WSMsgType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span>
+                    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Received: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">create_task</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">session_handler_callback</span><span class="p">(</span><span class="n">Signal</span><span class="o">.</span><span class="n">DATA</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">WSMsgType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span>
+                    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Received unexpected message type: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+        <span class="k">except</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientConnectorError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">!=</span> <span class="n">State</span><span class="o">.</span><span class="n">RETRYING</span><span class="p">:</span>
+                <span class="n">_LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Websocket is not accessible (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">!=</span> <span class="n">State</span><span class="o">.</span><span class="n">RETRYING</span><span class="p">:</span>
+                <span class="n">_LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unexpected error (</span><span class="si">%s</span><span class="s2">) </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">!=</span> <span class="n">State</span><span class="o">.</span><span class="n">STOPPED</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">retry</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="WSClient.stop"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close websocket connection.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">STOPPED</span><span class="p">)</span>
+        <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Shutting down connection to websocket (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WSClient.retry"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.retry">[docs]</a>    <span class="k">def</span> <span class="nf">retry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retry to connect to websocket.</span>
+
+<span class="sd">        Do an immediate retry without timer and without signalling state change.</span>
+<span class="sd">        Signal state change only after first retry fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">==</span> <span class="n">State</span><span class="o">.</span><span class="n">RETRYING</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_state</span> <span class="o">==</span> <span class="n">State</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">:</span>
+            <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Reconnecting to websocket (</span><span class="si">%s</span><span class="s2">) failed, scheduling retry at an interval of </span><span class="si">%i</span><span class="s2"> seconds&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                <span class="n">RETRY_TIMER</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_changed</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">RETRYING</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_state</span> <span class="o">==</span> <span class="n">State</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">:</span>
+            <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reconnecting to websocket (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span><span class="n">RETRY_TIMER</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WSClient.send_message"><a class="viewcode-back" href="../../api/pysaleryd.html#pysaleryd.websocket.WSClient.send_message">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Send message to websocket&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Sending message </span><span class="si">%s</span><span class="s2"> to websocket&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">send_str</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to send message </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> to websocket. State is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pysaleryd</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributions &amp; Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Module Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Björn Dalfors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

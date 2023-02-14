@@ -1,0 +1,7 @@
+pysaleryd
+=========
+
+.. toctree::
+   :maxdepth: 4
+
+   pysaleryd
