@@ -37,9 +37,8 @@ jobs:
       - name: Install requirements
         run: python3 -m pip install tox setuptools
       - name: Build docs
-        env:
-          SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: tox -e docs 
+        run: |
+          SPHINX_GITHUB_CHANGELOG_TOKEN='${{ secrets.GITHUB_TOKEN }}' tox -e docs 
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
