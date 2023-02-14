@@ -74,7 +74,7 @@ Read data using callback
 
 Send control command
 --------------------
-Command syntax can be found by disecting websocket messages in the built in web ui
+Command syntax can be found by dissecting websocket messages in the built in web ui
 
 .. code-block:: python3
 
