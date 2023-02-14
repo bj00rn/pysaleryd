@@ -3,8 +3,7 @@
 import asyncio
 import logging
 from typing import Callable
-
-from aiohttp import ClientSession
+import aiohttp
 
 from .websocket import WSClient, Signal, State
 from .utils import ParseError, Parser
@@ -14,7 +13,7 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 class Client:
     """Client to manage communication with HRV"""
 
-    def __init__(self, url: str, port: int, session: ClientSession):
+    def __init__(self, url: str, port: int, session: aiohttp.ClientSession):
         self._url = url
         self._port = port
         self._session = session
@@ -70,12 +69,8 @@ class Client:
 
     @property
     def data(self):
-        """Get data"""
+        """Get data from system"""
         return self._data
-
-    async def async_get_data(self):
-        """Async get data"""
-        return self.data
 
     async def send_command(self, key, value: str | int):
         """Send command to HRV"""

@@ -1,5 +1,4 @@
-"""Python library to connect HRV and Home Assistant to work together."""
-
+"""Websocket client to listen and send messages to and from HRV system."""
 from asyncio import create_task, get_running_loop
 import enum
 import logging
@@ -73,7 +72,7 @@ class WSClient:
         create_task(self.running())
 
     async def running(self) -> None:
-        """Start websocket connection."""
+        """Start websocket connection and begin listening"""
         if self._state == State.RUNNING:
             return
 
