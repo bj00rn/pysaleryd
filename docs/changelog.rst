@@ -1,4 +1,6 @@
-.. _changes:
+============
+Changelog
+============
 
 .. changelog::
     :changelog-url: https://github.com/bj00rn/pysaleryd/releases/
