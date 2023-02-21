@@ -8,7 +8,7 @@ __copyright__ = "Björn Dalfors"
 __license__ = "MIT"
 
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture
 def parser() -> Parser:

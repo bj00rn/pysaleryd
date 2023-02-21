@@ -8,7 +8,7 @@ import aiohttp
 from .websocket import WSClient, Signal, State
 from .utils import ParseError, Parser
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+_LOGGER: logging.Logger = logging.getLogger(__name__)
 
 class Client:
     """Client to manage communication with HRV"""

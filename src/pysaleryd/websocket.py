@@ -8,7 +8,7 @@ from typing import Final, Callable, Awaitable
 import aiohttp
 
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class Signal(enum.Enum):
