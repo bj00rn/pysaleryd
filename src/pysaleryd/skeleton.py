@@ -21,12 +21,12 @@ References:
 """
 
 import argparse
-import logging
-import sys
 import asyncio
+import logging
 import signal
+import sys
 
-from aiohttp import ClientSession
+import aiohttp
 
 from pysaleryd import __version__
 from pysaleryd.client import Client
@@ -119,7 +119,7 @@ def main(args):
     signal.signal(signal.SIGINT, signal_handler)
 
     async def runner(args):
-        async with ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             async with Client(args.host, args.port, session) as hrv_client:
                 if args.send:
                     if not isinstance(args.send_key, str):

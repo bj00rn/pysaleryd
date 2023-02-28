@@ -1,12 +1,10 @@
 """Websocket client to listen and send messages to and from HRV system."""
-from asyncio import create_task, get_running_loop
+import asyncio
 import enum
 import logging
-
-from typing import Final, Callable, Awaitable
+from typing import Awaitable, Callable, Final
 
 import aiohttp
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +44,8 @@ class WSClient:
         self.port = port
         self.session_handler_callback = callback
 
-        self.loop = get_running_loop()
+        self.loop = asyncio.get_running_loop()
+        self._task = None
         self._ws = None
         self._state = self._previous_state = State.NONE
 
@@ -62,36 +61,34 @@ class WSClient:
 
     def state_changed(self) -> None:
         """Signal state change."""
-        create_task(
+        asyncio.create_task(
             self.session_handler_callback(
                 Signal.CONNECTION_STATE, data=None, state=self._state)
         )
 
     def start(self) -> None:
         """Start websocket and update its state."""
-        create_task(self.running())
+        if self._state == State.RUNNING:
+            _LOGGER.warning("Already running")
+            return
+        self._task = asyncio.create_task(self.running())
 
     async def running(self) -> None:
         """Start websocket connection and begin listening"""
-        if self._state == State.RUNNING:
-            return
-
         url = f"http://{self.host}:{self.port}"
 
         try:
             _LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
             self._ws = await self.session.ws_connect(url, timeout=10)
+            self.set_state(State.RUNNING)
+            self.state_changed()
             _LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
             # server won't start sending unless data is received
             await self._ws.send_str("#\r")
             await self._ws.receive_str()
-            self.set_state(State.RUNNING)
-            self.state_changed()
+           
 
             async for msg in self._ws:
-                if self._state == State.STOPPED:
-                    await self._ws.close()
-                    break
 
                 if msg.type == aiohttp.WSMsgType.CLOSED:
                     _LOGGER.warning(
@@ -104,7 +101,7 @@ class WSClient:
 
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     _LOGGER.debug("Received: %s", msg.data)
-                    create_task(
+                    asyncio.create_task(
                         self.session_handler_callback(Signal.DATA, data=msg.data)
                     )
                     continue
@@ -113,21 +110,27 @@ class WSClient:
                     _LOGGER.warning("Received unexpected message type: %s", msg.type)
                     continue
 
-        except aiohttp.ClientConnectorError:
+        except aiohttp.ClientError:
             if self._state != State.RETRYING:
-                _LOGGER.error("Websocket is not accessible (%s)", self.host)
+                _LOGGER.error("Connection failed (%s)", self.host, exc_info=True)
+        except asyncio.CancelledError as exc:
+            self._state = State.STOPPED
+            self.state_changed()
+            if self._ws:
+                await self._ws.close()
+            _LOGGER.debug("Disconnected: %s", exc)
 
         except Exception as err:
             if self._state != State.RETRYING:
-                _LOGGER.error("Unexpected error (%s) %s", self.host, err)
+                _LOGGER.error("Unexpected error", exc_info=True)
 
         if self._state != State.STOPPED:
             self.retry()
 
     def stop(self) -> None:
         """Close websocket connection."""
-        self.set_state(State.STOPPED)
         _LOGGER.info("Shutting down connection to websocket (%s)", self.host)
+        self._task.cancel("stop")
 
     def retry(self) -> None:
         """Retry to connect to websocket.
