@@ -86,7 +86,6 @@ class WSClient:
             # server won't start sending unless data is received
             await self._ws.send_str("#\r")
             await self._ws.receive_str()
-           
 
             async for msg in self._ws:
 
@@ -114,9 +113,7 @@ class WSClient:
             if self._state != State.RETRYING:
                 _LOGGER.error("Connection failed (%s)", self.host, exc_info=True)
         except asyncio.CancelledError as exc:
-            self._state = State.STOPPED
-            self.state_changed()
-            if self._ws:
+            if self._ws and not self._ws.closed:
                 await self._ws.close()
             _LOGGER.debug("Disconnected: %s", exc)
 
@@ -124,12 +121,13 @@ class WSClient:
             if self._state != State.RETRYING:
                 _LOGGER.error("Unexpected error", exc_info=True)
 
-        if self._state != State.STOPPED:
-            self.retry()
+        self.retry()
 
     def stop(self) -> None:
         """Close websocket connection."""
         _LOGGER.info("Shutting down connection to websocket (%s)", self.host)
+        self.set_state(State.STOPPED)
+        self.state_changed()
         self._task.cancel("stop")
 
     def retry(self) -> None:
@@ -138,6 +136,9 @@ class WSClient:
         Do an immediate retry without timer and without signalling state change.
         Signal state change only after first retry fails.
         """
+        if self._state == State.STOPPED:
+            return
+
         if self._state == State.RETRYING and self._previous_state == State.RUNNING:
             _LOGGER.info(
                 "Reconnecting to websocket (%s) failed, scheduling retry at an interval of %i seconds",

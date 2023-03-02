@@ -35,9 +35,12 @@ class Client:
         async def check_connection():
             while self._socket.state != State.RUNNING:
                 await asyncio.sleep(0.2)
-
-        self._socket.start()
-        await asyncio.wait_for(check_connection(), 10)
+        try:
+            self._socket.start()
+            await asyncio.wait_for(check_connection(), 10)
+        except Exception as e:
+            self.disconnect()
+            raise e
 
     def disconnect(self):
         """Disconnect from system"""

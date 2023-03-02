@@ -22,6 +22,19 @@ async def test_client_connect(hrv_client: Client):
     """client tests"""
     assert hrv_client.state == State.RUNNING
 
+
+@pytest.mark.asyncio
+async def test_client_connect_unsresponsive():
+    async with aiohttp.ClientSession() as session:  
+        client = Client("0.0.0.0", 3002, session)
+        try:
+            await client.connect()
+        except:
+            pass
+
+        await asyncio.sleep(10)
+        assert client.state == State.STOPPED
+
 @pytest.mark.asyncio
 async def test_handler(hrv_client: Client, mocker):
     """Test handler callback"""
