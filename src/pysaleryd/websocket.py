@@ -26,6 +26,8 @@ class State(enum.Enum):
 
 
 RETRY_TIMER: Final = 15
+RECEIVE_TIMEOUT: Final = 5
+TIMEOUT: Final = 5
 
 
 class WSClient:
@@ -79,7 +81,7 @@ class WSClient:
 
         try:
             _LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
-            self._ws = await self.session.ws_connect(url, timeout=10)
+            self._ws = await self.session.ws_connect(url, timeout=TIMEOUT, receive_timeout=RECEIVE_TIMEOUT)
             self.set_state(State.RUNNING)
             self.state_changed()
             _LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
@@ -91,11 +93,11 @@ class WSClient:
 
                 if msg.type == aiohttp.WSMsgType.CLOSED:
                     _LOGGER.warning(
-                        "Connection to websocket closed by remote (%s)", self.host)
+                        "Connection to websocket closed by remote (%s:%s)", self.host, self.port)
                     break
 
                 if msg.type == aiohttp.WSMsgType.ERROR:
-                    _LOGGER.error("Websocket error (%s)", self.host)
+                    _LOGGER.warning("Websocket error (%s)", msg)
                     break
 
                 if msg.type == aiohttp.WSMsgType.TEXT:
@@ -111,13 +113,15 @@ class WSClient:
 
         except aiohttp.ClientError:
             if self._state != State.RETRYING:
-                _LOGGER.error("Connection failed (%s)", self.host, exc_info=True)
-        except asyncio.CancelledError as exc:
+                _LOGGER.warning("Connection failed (%s:%s)",
+                                self.host, self.port, exc_info=True)
+        except asyncio.TimeoutError as exc:
+            _LOGGER.warning("Read timeout: %s", exc)
+        except asyncio.CancelledError:
             if self._ws and not self._ws.closed:
                 await self._ws.close()
-            _LOGGER.debug("Disconnected: %s", exc)
-
-        except Exception as err:
+            _LOGGER.info("Disconnected from (%s:%s)", self.host, self.port)
+        except Exception:
             if self._state != State.RETRYING:
                 _LOGGER.error("Unexpected error", exc_info=True)
 
@@ -125,10 +129,11 @@ class WSClient:
 
     def stop(self) -> None:
         """Close websocket connection."""
-        _LOGGER.info("Shutting down connection to websocket (%s)", self.host)
+        _LOGGER.info("Shutting down connection to websocket (%s:%s)",
+                     self.host, self.port)
         self.set_state(State.STOPPED)
         self.state_changed()
-        self._task.cancel("stop")
+        self._task.cancel()
 
     def retry(self) -> None:
         """Retry to connect to websocket.
@@ -162,6 +167,6 @@ class WSClient:
             _LOGGER.debug("Sending message %s to websocket", message)
             return await self._ws.send_str(message)
         except Exception as exc:
-            raise Exception(
-                f"Failed to send message {message} to websocket. State is {self._state}"
-            ) from exc
+            _LOGGER.error("Failed to send message %s to websocket. State is %s",
+                          message, self._state, exc_info=True)
+            raise exc
