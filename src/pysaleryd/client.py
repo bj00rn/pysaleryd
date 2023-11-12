@@ -55,7 +55,15 @@ class Client:
         if signal == Signal.DATA:
             try:
                 (key, value) = self._parser.from_str(data)
-                self._data[key] = value
+                if key == "*EB":
+                    # special treatment for key that may appear more than once in each frame
+                    if key in self._data and isinstance(self._data[key], list):
+                        if value not in self._data[key]:
+                            self._data[key].append(value)
+                    else:
+                        self._data[key] = [value]
+                else:
+                    self._data[key] = value
             except ParseError:
                 pass
 
