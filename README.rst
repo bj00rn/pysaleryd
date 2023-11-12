@@ -83,24 +83,23 @@ List command line usage
 
     $ pysaleryd -h 
 
-
 Connect to system and capture websocket data to stdout
 
 .. code-block:: shell
 
-    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT [-t TIMEOUT] 
+    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT --listen [-t TIMEOUT] 
 
 Send command to system
 
 .. code-block:: shell
 
-    $ pysaleryd --host 192.168.1.151 --port 3001 --send --key MF --data 0
+    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT --send --key MF --data 0
 
 Troubleshooting
 ===============
 * Confirm system is connected and UI is reachable on the local network. Follow steps in the manual.
 * Confirm websocket port by connecting to the UI using a browser and take note of websocket port using debug console in browser. 3001 is probably default
-* The system HRV system can only handle a few connected clients. Shut down any additional clients/browsers and try again
+* The system HRV system can only handle a few connected clients. Shut down any additional clients/browsers sessions and try again.
 
 
 Disclaimer
