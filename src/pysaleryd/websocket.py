@@ -65,7 +65,8 @@ class WSClient:
         """Signal state change."""
         asyncio.create_task(
             self.session_handler_callback(
-                Signal.CONNECTION_STATE, data=None, state=self._state)
+                Signal.CONNECTION_STATE, data=None, state=self._state
+            )
         )
 
     def start(self) -> None:
@@ -81,7 +82,9 @@ class WSClient:
 
         try:
             _LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
-            self._ws = await self.session.ws_connect(url, timeout=TIMEOUT, receive_timeout=RECEIVE_TIMEOUT)
+            self._ws = await self.session.ws_connect(
+                url, timeout=TIMEOUT, receive_timeout=RECEIVE_TIMEOUT
+            )
             self.set_state(State.RUNNING)
             self.state_changed()
             _LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
@@ -90,10 +93,12 @@ class WSClient:
             await self._ws.receive_str()
 
             async for msg in self._ws:
-
                 if msg.type == aiohttp.WSMsgType.CLOSED:
                     _LOGGER.warning(
-                        "Connection to websocket closed by remote (%s:%s)", self.host, self.port)
+                        "Connection to websocket closed by remote (%s:%s)",
+                        self.host,
+                        self.port,
+                    )
                     break
 
                 if msg.type == aiohttp.WSMsgType.ERROR:
@@ -113,8 +118,9 @@ class WSClient:
 
         except aiohttp.ClientError:
             if self._state != State.RETRYING:
-                _LOGGER.warning("Connection failed (%s:%s)",
-                                self.host, self.port, exc_info=True)
+                _LOGGER.warning(
+                    "Connection failed (%s:%s)", self.host, self.port, exc_info=True
+                )
         except asyncio.TimeoutError as exc:
             _LOGGER.warning("Read timeout: %s", exc)
         except asyncio.CancelledError:
@@ -129,8 +135,9 @@ class WSClient:
 
     def stop(self) -> None:
         """Close websocket connection."""
-        _LOGGER.info("Shutting down connection to websocket (%s:%s)",
-                     self.host, self.port)
+        _LOGGER.info(
+            "Shutting down connection to websocket (%s:%s)", self.host, self.port
+        )
         self.set_state(State.STOPPED)
         self.state_changed()
         self._task.cancel()
@@ -167,6 +174,10 @@ class WSClient:
             _LOGGER.debug("Sending message %s to websocket", message)
             return await self._ws.send_str(message)
         except Exception as exc:
-            _LOGGER.error("Failed to send message %s to websocket. State is %s",
-                          message, self._state, exc_info=True)
+            _LOGGER.error(
+                "Failed to send message %s to websocket. State is %s",
+                message,
+                self._state,
+                exc_info=True,
+            )
             raise exc
