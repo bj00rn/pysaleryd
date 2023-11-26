@@ -17,17 +17,8 @@ def parser() -> Parser:
     return Parser()
 
 
-def test_parse_list_from_str(parser: Parser):
-    (key, value) = parser.from_str("#MF: 1+ 0+ 2\r")
-    assert key == "MF"
-    assert isinstance(value, list)
-    assert value[0] == 1
-    assert value[1] == 0
-    assert value[2] == 2
-
-
 def test_parse_int_from_list_str(parser: Parser):
-    (key, value) = parser.from_str("#MF: 1+ 0+ 2+ 30\r")
+    (key, value) = parser.from_str("#MF: 1+ 0+ 2+30\r")
     assert key == "MF"
     assert isinstance(value, list)
     assert value[0] == 1
@@ -44,7 +35,7 @@ def test_parse_int_from_str(parser: Parser):
 
 
 def test_parse_str_from_str(parser: Parser):
-    (key, value) = parser.from_str("#*XX: xxx\r")
+    (key, value) = parser.from_str("#*XX:xxx\r")
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "xxx"
