@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 from aiohttp import web
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Overrides pytest default function scoped event loop"""
@@ -16,11 +17,12 @@ def event_loop():
     yield loop
     loop.close()
 
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def server():
     """Websocket test server"""
-    async def websocket_handler(request):
 
+    async def websocket_handler(request):
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
@@ -32,13 +34,9 @@ async def server():
         return ws
 
     app = web.Application()
-    app.add_routes([web.get('/', websocket_handler)])
+    app.add_routes([web.get("/", websocket_handler)])
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, 'localhost', 3001)
+    site = web.TCPSite(runner, "localhost", 3001)
     await site.start()
     return site
-
-
-
-

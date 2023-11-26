@@ -1,4 +1,3 @@
-
 from pysaleryd.skeleton import main
 
 __author__ = "Björn Dalfors"
@@ -14,6 +13,18 @@ def test_main(capsys):
     captured = capsys.readouterr()
     assert not captured.err
 
-    main(["--host", "192.168.1.151", "--port", "3001", "--send", "--key", "MF", "--data", "0"])
+    main(
+        [
+            "--host",
+            "192.168.1.151",
+            "--port",
+            "3001",
+            "--send",
+            "--key",
+            "MF",
+            "--data",
+            "0",
+        ]
+    )
     captured = capsys.readouterr()
     assert not captured.err

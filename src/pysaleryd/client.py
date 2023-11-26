@@ -3,10 +3,11 @@
 import asyncio
 import logging
 from typing import Callable
+
 import aiohttp
 
-from .websocket import WSClient, Signal, State
 from .utils import ParseError, Parser
+from .websocket import Signal, State, WSClient
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class ErrorCache:
     def begin_frame(self):
         """Begin new frame"""
         self._is_collecting = True
+
 
 class Client:
     """Client to manage communication with HRV"""

@@ -60,7 +60,12 @@ def parse_args(args):
         version=f"pysaleryd {__version__}",
     )
     parser.add_argument(
-        "--port", dest="port", help="port number", type=int, metavar="INT", required=True
+        "--port",
+        dest="port",
+        help="port number",
+        type=int,
+        metavar="INT",
+        required=True,
     )
     parser.add_argument("--host", dest="host", help="host", type=str, required=True)
 

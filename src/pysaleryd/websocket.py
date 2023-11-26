@@ -153,7 +153,7 @@ class WSClient:
 
         if self._state == State.RETRYING and self._previous_state == State.RUNNING:
             _LOGGER.info(
-                "Reconnecting to websocket (%s) failed, scheduling retry at an interval of %i seconds",
+                "Reconnecting to websocket (%s) failed, scheduling retry at an interval of %i seconds",  # noqa: E501
                 self.host,
                 RETRY_TIMER,
             )
