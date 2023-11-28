@@ -93,7 +93,7 @@ class WSClient:
             await self._ws.receive_str()
 
             async for msg in self._ws:
-                if msg.type == aiohttp.WSMsgType.CLOSED:
+                if msg.type == aiohttp.WSMsgType.CLOSE:
                     _LOGGER.warning(
                         "Connection to websocket closed by remote (%s:%s)",
                         self.host,
@@ -140,7 +140,8 @@ class WSClient:
         )
         self.set_state(State.STOPPED)
         self.state_changed()
-        self._task.cancel()
+        if self._task:
+            self._task.cancel()
 
     def retry(self) -> None:
         """Retry to connect to websocket.
@@ -153,7 +154,7 @@ class WSClient:
 
         if self._state == State.RETRYING and self._previous_state == State.RUNNING:
             _LOGGER.info(
-                "Reconnecting to websocket (%s) failed, scheduling retry at an interval of %i seconds",
+                "Reconnecting to websocket (%s) failed, scheduling retry at an interval of %i seconds",  # noqa: E501
                 self.host,
                 RETRY_TIMER,
             )

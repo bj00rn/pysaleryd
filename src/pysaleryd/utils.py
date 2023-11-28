@@ -1,4 +1,3 @@
- 
 import logging
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -7,9 +6,10 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 class ParseError(BaseException):
     pass
 
-class Parser():
+
+class Parser:
     def to_str(self, key, value):
-        return (f"#{key}:{value}\r")
+        return f"#{key}:{value}\r"
 
     def from_str(self, msg: str):
         """parse message"""

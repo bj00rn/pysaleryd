@@ -81,13 +81,13 @@ List command line usage
 
 .. code-block:: shell
 
-    $ pysaleryd -h 
+    $ pysaleryd -h
 
 Connect to system and capture websocket data to stdout
 
 .. code-block:: shell
 
-    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT --listen [-t TIMEOUT] 
+    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT --listen [-t TIMEOUT]
 
 Send command to system
 
@@ -107,7 +107,7 @@ Disclaimer
 
 Use at own risk.
 
-This project is in no way affiliated with the manufacturer. 
+This project is in no way affiliated with the manufacturer.
 
 All product names, logos, and brands are property of their respective owners. All company, product and service names used are for identification purposes only. Use of these names, logos, and brands does not imply endorsement.
 
