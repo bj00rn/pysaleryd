@@ -41,12 +41,12 @@ class WSClient:
         callback: Callable[[Signal, str | None, State | None], Awaitable[None]],
     ) -> None:
         """Create resources for websocket communication."""
-        self.session = session
-        self.host = host
-        self.port = port
-        self.session_handler_callback = callback
+        self._session = session
+        self._host = host
+        self._port = port
+        self._session_handler_callback = callback
 
-        self.loop = asyncio.get_running_loop()
+        self._loop = asyncio.get_running_loop()
         self._task = None
         self._ws = None
         self._state = self._previous_state = State.NONE
@@ -56,40 +56,55 @@ class WSClient:
         """State of websocket."""
         return self._state
 
-    def set_state(self, value: State) -> None:
+    def _set_state(self, value: State) -> None:
         """Set state of websocket and store previous state."""
-        self._previous_state = self._state
         self._state = value
 
-    def state_changed(self) -> None:
+    def _state_changed(self) -> None:
         """Signal state change."""
         asyncio.create_task(
-            self.session_handler_callback(
+            self._session_handler_callback(
                 Signal.CONNECTION_STATE, data=None, state=self._state
             )
         )
 
-    def start(self) -> None:
-        """Start websocket and update its state."""
-        if self._state == State.RUNNING:
-            _LOGGER.debug("Already running")
+    def _retry(self) -> None:
+        """Retry to connection to websocket"""
+        if self._state == State.STOPPED:
             return
-        self._task = asyncio.create_task(self.running())
 
-    async def running(self) -> None:
+        if self._state == State.RETRYING:
+            _LOGGER.info(
+                "Reconnecting to websocket failed (%s:%s) scheduling retry at an interval of %i seconds",  # noqa: E501
+                self._host,
+                self._port,
+                RETRY_TIMER,
+            )
+            self._state_changed()
+            self._loop.call_later(RETRY_TIMER, self.start)
+        else:
+            self._set_state(State.RETRYING)
+            _LOGGER.info(
+                "Reconnecting to websocket (%s:%s)",
+                self._host,
+                self._port,
+            )
+            self.start()
+
+    async def _running(self) -> None:
         """Start websocket connection and begin listening"""
 
         try:
-            url = f"http://{self.host}:{self.port}"
+            url = f"http://{self._host}:{self._port}"
 
             try:
-                _LOGGER.info("Connecting to websocket (%s:%s)", self.host, self.port)
-                self._ws = await self.session.ws_connect(
+                _LOGGER.info("Connecting to websocket (%s:%s)", self._host, self._port)
+                self._ws = await self._session.ws_connect(
                     url, timeout=TIMEOUT, receive_timeout=RECEIVE_TIMEOUT
                 )
-                self.set_state(State.RUNNING)
-                self.state_changed()
-                _LOGGER.info("Connected to websocket (%s:%s)", self.host, self.port)
+                self._set_state(State.RUNNING)
+                self._state_changed()
+                _LOGGER.info("Connected to websocket (%s:%s)", self._host, self._port)
                 # server won't start sending unless data is received
                 await self._ws.send_str("#\r")
                 await self._ws.receive_str()
@@ -98,8 +113,8 @@ class WSClient:
                     if msg.type == aiohttp.WSMsgType.CLOSE:
                         _LOGGER.warning(
                             "Connection to websocket closed by remote (%s:%s)",
-                            self.host,
-                            self.port,
+                            self._host,
+                            self._port,
                         )
                         break
 
@@ -110,7 +125,7 @@ class WSClient:
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         _LOGGER.debug("Received: %s", msg.data)
                         asyncio.create_task(
-                            self.session_handler_callback(Signal.DATA, data=msg.data)
+                            self._session_handler_callback(Signal.DATA, data=msg.data)
                         )
                         continue
 
@@ -122,52 +137,36 @@ class WSClient:
 
             except (aiohttp.ClientError, aiohttp.ClientOSError):
                 _LOGGER.warning(
-                    "Connection failed (%s:%s)", self.host, self.port, exc_info=True
+                    "Connection failed (%s:%s)", self._host, self._port, exc_info=True
                 )
             except asyncio.TimeoutError as exc:
                 _LOGGER.warning("Read timeout: %s", exc)
             finally:
                 if self._ws:
                     await self._ws.close()
-                    _LOGGER.info("Disconnected from (%s:%s)", self.host, self.port)
+                    _LOGGER.info("Disconnected from (%s:%s)", self._host, self._port)
 
         except asyncio.CancelledError:
             _LOGGER.debug("Runner cancelled")
             raise
-        self.retry()
+        self._retry()
+
+    def start(self) -> None:
+        """Start websocket and update its state."""
+        if self._state == State.RUNNING:
+            _LOGGER.debug("Already running")
+            return
+        self._task = asyncio.create_task(self._running())
 
     def stop(self) -> None:
         """Close websocket connection."""
         _LOGGER.info(
-            "Shutting down connection to websocket (%s:%s)", self.host, self.port
+            "Shutting down connection to websocket (%s:%s)", self._host, self._port
         )
-        self.set_state(State.STOPPED)
-        self.state_changed()
+        self._set_state(State.STOPPED)
+        self._state_changed()
         if self._task:
             self._task.cancel()
-
-    def retry(self) -> None:
-        """Retry to connection to websocket"""
-        if self._state == State.STOPPED:
-            return
-
-        if self._state == State.RETRYING:
-            _LOGGER.info(
-                "Reconnecting to websocket failed (%s:%s) scheduling retry at an interval of %i seconds",  # noqa: E501
-                self.host,
-                self.port,
-                RETRY_TIMER,
-            )
-            self.state_changed()
-            self.loop.call_later(RETRY_TIMER, self.start)
-        else:
-            self.set_state(State.RETRYING)
-            _LOGGER.info(
-                "Reconnecting to websocket (%s:%s)",
-                self.host,
-                self.port,
-            )
-            self.start()
 
     async def send_message(self, message: str):
         """Send message to websocket"""
