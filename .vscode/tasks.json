@@ -1,0 +1,13 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run test server",
+            "type": "shell",
+            "command": "python",
+            "args": ["-m", "aiohttp.web", "-H", "localhost", "-P", "3001", "tests.utils.test_server:run_server"]
+        }
+    ]
+}

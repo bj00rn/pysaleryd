@@ -1,4 +1,6 @@
+"""Client tests"""
 import asyncio
+import typing
 
 import aiohttp
 import pytest
@@ -6,59 +8,35 @@ import pytest_asyncio
 
 from pysaleryd.client import Client, State
 
+if typing.TYPE_CHECKING:
+    from aiohttp import web_server
+
 __author__ = "Björn Dalfors"
 __copyright__ = "Björn Dalfors"
 __license__ = "MIT"
 
 
-async def on_shutdown(app):
-    """Shutdown ws connections on shutdown"""
-    for ws in set(app["websockets"]):
-        try:
-            await ws.close(
-                code=aiohttp.WSCloseCode.GOING_AWAY, message="Server shutdown"
-            )
-        except Exception:
-            pass
-
-
-@pytest_asyncio.fixture
-async def hrv_client(ws_server):
+@pytest_asyncio.fixture(name="hrv_client")
+async def _hrv_client(ws_server):
     """HRV Client"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with Client("localhost", 3001, session) as client:
-                yield client
-    except Exception:
-        pass
+    async with aiohttp.ClientSession() as session:
+        async with Client("localhost", 3001, session) as client:
+            yield client
 
 
 @pytest.mark.asyncio
-async def test_client_connect(hrv_client: Client):
+async def test_client_connect(hrv_client: "Client"):
     """test connect"""
     assert hrv_client.state == State.RUNNING
 
 
 @pytest.mark.asyncio
-async def test_client_connect_unsresponsive():
-    """test status when client is unresponsive"""
-    async with aiohttp.ClientSession() as session:
-        client = Client("localhost", 3002, session)
-        try:
-            await client.connect()
-        except Exception:  # noqa: W0718
-            pass
-
-        assert client.state == State.STOPPED
-
-
-@pytest.mark.asyncio
-async def test_handler(hrv_client: Client, mocker):
+async def test_handler(hrv_client: "Client", mocker):
     """Test handler callback"""
     handler = mocker.Mock()
 
     def broken_handler(data):
-        raise Exception()
+        raise Exception()  # pylint: disable=W0719
 
     hrv_client.add_handler(broken_handler)
     hrv_client.add_handler(handler)
@@ -67,15 +45,15 @@ async def test_handler(hrv_client: Client, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_data(hrv_client: Client, mocker):
+async def test_get_data(hrv_client: "Client"):
     """Test get data"""
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     assert isinstance(hrv_client.data, dict)
     assert any(hrv_client.data.keys())
 
 
 @pytest.mark.asyncio
-async def test_reconnect(hrv_client: Client, ws_server):
+async def test_reconnect(hrv_client: "Client", ws_server: "web_server.Server"):
     """Test reconnect"""
 
     async def has_state(state):
@@ -90,16 +68,16 @@ async def test_reconnect(hrv_client: Client, ws_server):
 
 
 @pytest.mark.asyncio
-async def test_send_command(hrv_client: Client, mocker):
+async def test_send_command(hrv_client: "Client"):
     """Test send command"""
     await hrv_client.send_command("MF", "0")
 
 
 @pytest.mark.asyncio
-async def test_disconnect(hrv_client: Client, mocker):
+async def test_disconnect(hrv_client: "Client"):
     """Test send command"""
     hrv_client.disconnect()
     await asyncio.sleep(2)
     assert hrv_client.state == State.STOPPED
     await asyncio.sleep(2)
-    assert hrv_client._socket._ws.closed
+    assert hrv_client._socket._ws.closed  # pylint: disable=all

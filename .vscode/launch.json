@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Test server",
+            "type": "python",
+            "request": "launch",
+            "module": "aiohttp.web",
+            "justMyCode": true,
+            "args": ["-H", "localhost", "-P", "3001", "tests.utils.test_server:run_server"]
+        },
+        {
+            "name": "Debug CLI",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/pysaleryd/skeleton.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--host",
+                "localhost",
+                "--port",
+                "3001"
+            ]
+        }
+    ]
+}

@@ -12,12 +12,13 @@ __license__ = "MIT"
 _LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture
-def parser() -> Parser:
+@pytest.fixture(name="parser")
+def _parser() -> Parser:
     return Parser()
 
 
 def test_parse_int_from_list_str(parser: Parser):
+    """Test parsing int list"""
     (key, value) = parser.from_str("#MF: 1+ 0+ 2+30\r")
     assert key == "MF"
     assert isinstance(value, list)
@@ -28,6 +29,7 @@ def test_parse_int_from_list_str(parser: Parser):
 
 
 def test_parse_int_from_str(parser: Parser):
+    """Test parsing int"""
     (key, value) = parser.from_str("#*XX:0\r")
     assert key == "*XX"
     assert isinstance(value, int)
@@ -35,6 +37,7 @@ def test_parse_int_from_str(parser: Parser):
 
 
 def test_parse_str_from_str(parser: Parser):
+    """Test parsing str"""
     (key, value) = parser.from_str("#*XX:xxx\r")
     assert key == "*XX"
     assert isinstance(value, str)
@@ -47,9 +50,6 @@ def test_parse_str_from_str(parser: Parser):
 
 
 def test_parse_error(parser: Parser):
-    did_throw = False
-    try:
+    """Test parse error"""
+    with pytest.raises(ParseError):
         parser.from_str("wer")
-    except ParseError:
-        did_throw = True
-    assert did_throw
