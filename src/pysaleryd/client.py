@@ -69,12 +69,8 @@ class Client:
             while self._socket.state != State.RUNNING:
                 await asyncio.sleep(0.2)
 
-        try:
-            self._socket.start()
-            await asyncio.wait_for(check_connection(), 10)
-        except Exception as e:
-            self.disconnect()
-            raise e
+        self._socket.start()
+        await asyncio.gather(check_connection())
 
     def disconnect(self):
         """Disconnect from system"""
@@ -92,7 +88,9 @@ class Client:
             except Exception:
                 _LOGGER.warning("Failed to call handler", exc_info=True)
 
-    async def _handler(self, signal: Signal, data: str, state: State = None):
+    async def _handler(
+        self, signal: Signal, data: str, state: State = None
+    ):  # pylint: disable W0613
         """Call handlers if data"""
         if signal == Signal.DATA:
             try:
@@ -115,7 +113,7 @@ class Client:
 
     @property
     def state(self):
-        """Get socket internal socket state"""
+        """Get internal socket state"""
         return self._socket.state
 
     @property
