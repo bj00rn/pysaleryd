@@ -120,7 +120,6 @@ jobs:
           # TODO: Set your PYPI_TOKEN as a secret using GitHub UI
           # - https://pypi.org/help/#apitoken
           # - https://docs.github.com/en/actions/security-guides/encrypted-secrets
-          # TWINE_REPOSITORY: pypi
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_TEST }}
         run: pipx run tox -e publish
@@ -129,7 +128,7 @@ jobs:
           # TODO: Set your PYPI_TOKEN as a secret using GitHub UI
           # - https://pypi.org/help/#apitoken
           # - https://docs.github.com/en/actions/security-guides/encrypted-secrets
-          # TWINE_REPOSITORY: pypi
+          TWINE_REPOSITORY: pypi
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: pipx run tox -e publish
