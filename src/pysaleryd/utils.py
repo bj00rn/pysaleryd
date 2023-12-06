@@ -1,18 +1,40 @@
+"""Utils"""
 import logging
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 class ParseError(BaseException):
-    pass
+    """Parse error. Raised when message parsing fails"""
 
 
 class Parser:
+    """Message parser. Parse HRV system messages"""
+
     def to_str(self, key, value):
+        """Parse message to string
+
+        Args:
+            key (_type_): message key
+            value (_type_): message value
+
+        Returns:
+            _type_: _description_
+        """
         return f"#{key}:{value}\r"
 
     def from_str(self, msg: str):
-        """parse message"""
+        """Parse message string
+
+        Args:
+            msg (str): raw message
+
+        Raises:
+            ParseError: if parsing fails
+
+        Returns:
+            (key, value): parsed message key and value
+        """
         try:
             if msg[0] == "#":
                 if msg[1] == "$":
@@ -35,3 +57,32 @@ class Parser:
             raise ParseError(f"Failed to parse message {msg}") from exc
 
         raise ParseError("Failed to parse message {msg}")
+
+
+class ErrorCache:
+    """Error cache, caches previous data until frame is complete"""
+
+    def __init__(self) -> None:
+        self._data = []
+        self._next = []
+        self._is_collecting = False
+
+    @property
+    def data(self):
+        """Get error data"""
+        return self._data
+
+    def add(self, message):
+        """Add data to cache"""
+        if self._is_collecting:
+            self._next.append(message)
+
+    def end_frame(self):
+        """Mark data frame as complete"""
+        self._data = self._next
+        self._next = []
+        self._is_collecting = False
+
+    def begin_frame(self):
+        """Begin new frame"""
+        self._is_collecting = True

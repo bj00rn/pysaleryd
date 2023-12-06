@@ -31,7 +31,7 @@ TIMEOUT: Final = 5
 
 
 class WSClient:
-    """Websocket transport, session handling, message generation."""
+    """Websocket Client"""
 
     def __init__(
         self,
@@ -40,7 +40,14 @@ class WSClient:
         port: int,
         callback: Callable[[Signal, str | None, State | None], Awaitable[None]],
     ) -> None:
-        """Create resources for websocket communication."""
+        """Create websocket
+
+        Args:
+            session (aiohttp.ClientSession): client session
+            host (str): system host
+            port (int): system port
+            callback (Callable[[Signal, str  |  None, State  |  None], Awaitable[None]]): callback for state and data events  # noqa:
+        """
         self._session = session
         self._host = host
         self._port = port
@@ -57,7 +64,7 @@ class WSClient:
         return self._state
 
     def _set_state(self, value: State) -> None:
-        """Set state of websocket and store previous state."""
+        """Set state of websocket."""
         self._state = value
 
     def _state_changed(self) -> None:
@@ -69,7 +76,7 @@ class WSClient:
         )
 
     def _retry(self) -> None:
-        """Retry to connection to websocket"""
+        """Retry websocket connection"""
         if self._state == State.STOPPED:
             return
 
@@ -92,7 +99,7 @@ class WSClient:
             self.start()
 
     async def _running(self) -> None:
-        """Start websocket connection and begin listening"""
+        """Start websocket connection task"""
 
         try:
             url = f"http://{self._host}:{self._port}"
@@ -159,7 +166,7 @@ class WSClient:
         self._task = asyncio.create_task(self._running())
 
     def stop(self) -> None:
-        """Close websocket connection."""
+        """Close websocket connection"""
         _LOGGER.info(
             "Shutting down connection to websocket (%s:%s)", self._host, self._port
         )
@@ -169,15 +176,22 @@ class WSClient:
             self._task.cancel()
 
     async def send_message(self, message: str):
-        """Send message to websocket"""
+        """Send message to system
+
+        Args:
+            message (str): message
+
+        Returns:
+            _type_: Coroutine[Any, Any, None]
+        """
         try:
             _LOGGER.debug("Sending message %s to websocket", message)
             return await self._ws.send_str(message)
-        except Exception as exc:
+        except Exception:
             _LOGGER.error(
                 "Failed to send message %s to websocket. State is %s",
                 message,
                 self._state,
                 exc_info=True,
             )
-            raise exc
+            raise
