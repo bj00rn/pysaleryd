@@ -83,7 +83,7 @@ List command line usage
 
     $ pysaleryd -h
 
-Connect to system and capture websocket data to stdout
+Connect to system and capture websocket data to stdout test
 
 .. code-block:: shell
 
