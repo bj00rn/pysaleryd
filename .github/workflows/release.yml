@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       pre_release:
-      type: boolean
-      description: "pre-release?"
-      required: true
+        type: boolean
+        description: "pre-release?"
+        required: true
 
 jobs:
   release:
