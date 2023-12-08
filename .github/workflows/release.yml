@@ -5,6 +5,11 @@ name: Create release
 
 on:
   workflow_dispatch:
+    inputs:
+      pre_release:
+      type: boolean
+      description: "pre-release?"
+      required: true
 
 jobs:
   release:
@@ -21,6 +26,7 @@ jobs:
           version-file: pyproject.toml
           version-path: tool.pysaleryd.version
           skip-ci: false
+          pre-release: ${{ inputs.pre_release }}
 
       - name: Create Release
         uses: ncipollo/release-action@v1
@@ -31,3 +37,4 @@ jobs:
           tag: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
           name: ${{ steps.changelog.outputs.tag }}
+          prerelease: ${{ inputs.pre_release }}
