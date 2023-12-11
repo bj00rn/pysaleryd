@@ -27,7 +27,7 @@ class Client:
         self._handlers = set()
         self._socket = WSClient(self._session, self._url, self._port, self._handler)
         self._message_handler_task = asyncio.create_task(self._message_handler())
-        self._data_handler_task = asyncio.create_task(self._call_handlers())
+        self._data_handler_task = asyncio.create_task(self._call_handlers_task())
         self._incoming_queue = asyncio.queues.Queue()
 
     @property
@@ -48,15 +48,19 @@ class Client:
     async def __aexit__(self, _type, value, traceback):
         self.disconnect()
 
-    async def _call_handlers(self):
+    async def _call_handlers_task(self):
         """Call handlers with data"""
         while True:
-            for handler in self._handlers:
-                try:
-                    handler(self._data)
-                except Exception:
-                    _LOGGER.warning("Failed to call handler", exc_info=True)
+            self._call_handlers()
             await asyncio.sleep(self._update_interval)
+
+    def _call_handlers(self):
+        """Call handlers with data"""
+        for handler in self._handlers:
+            try:
+                handler(self._data)
+            except Exception:
+                _LOGGER.warning("Failed to call handler", exc_info=True)
 
     async def _handler(
         self, signal: Signal, data: str, state: "State" = None
@@ -70,7 +74,7 @@ class Client:
                 msg = await self._incoming_queue.get()
                 # update state
                 # if ack force push state to handler
-                (key, value) = Parser.from_str(msg)
+                (key, value, is_ack) = Parser.from_str(msg)
 
                 if key in ["*EA", "*EB", "*EZ"]:
                     if key == "*EA":
@@ -82,6 +86,8 @@ class Client:
                         self._data["*EB"] = self._error_cache.data
                 else:
                     self._data[key] = value
+                    if is_ack:
+                        self._call_handlers()
             except ParseError:
                 pass
 
