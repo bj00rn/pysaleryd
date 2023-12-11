@@ -24,7 +24,7 @@ class Client:
         self._session = session
         self._data = {}
         self._error_cache = ErrorCache()
-        self._handlers = []
+        self._handlers = set()
         self._socket = WSClient(self._session, self._url, self._port, self._handler)
         self._message_handler_task = asyncio.create_task(self._message_handler())
         self._data_handler_task = asyncio.create_task(self._call_handlers())
@@ -103,7 +103,11 @@ class Client:
 
     def add_handler(self, handler: Callable[[str], None]):
         """Add event handler"""
-        self._handlers.append(handler)
+        self._handlers.add(handler)
+
+    def remove_handler(self, handler: Callable[[str], None]):
+        """Remove event handler"""
+        self._handlers.remove(handler)
 
     async def send_command(self, key, value: str | int):
         """Send command to HRV"""
