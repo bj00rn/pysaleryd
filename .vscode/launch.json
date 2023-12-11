@@ -10,7 +10,13 @@
             "request": "launch",
             "module": "aiohttp.web",
             "justMyCode": true,
-            "args": ["-H", "localhost", "-P", "3001", "tests.utils.test_server:run_server"]
+            "args": [
+                "-H",
+                "localhost",
+                "-P",
+                "3001",
+                "tests.utils.test_server:run_server"
+            ]
         },
         {
             "name": "Debug CLI",
