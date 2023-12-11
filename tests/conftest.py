@@ -6,7 +6,8 @@ import asyncio
 import pytest
 import pytest_asyncio
 from aiohttp import web
-from utils.test_server import WebsocketView
+
+from .utils.test_server import WebsocketView
 
 
 @pytest.fixture(scope="session")
