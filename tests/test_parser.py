@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(name="parser")
 def _parser() -> Parser:
-    return Parser()
+    return Parser
 
 
 def test_parse_int_from_list_str(parser: Parser):

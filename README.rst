@@ -22,11 +22,12 @@ pysaleryd
 
 Python library for controlling Saleryd HRV system using the built in websocket server used by Saleryd HRV Homeassistant integration https://github.com/bj00rn/ha-saleryd-ftx
 
+Maintains a reconnecting websocket to the system.
 
 Supported devices
 ==================
 
-LOKE1/Loke Basic/LS-01 using control system 4.1.1
+LOKE1/Loke Basic/LS-01 using control system 4.1.5
 
 Usage with asyncio as library
 =============================
@@ -38,12 +39,14 @@ Read data
 .. code-block:: python3
 
     import asyncio
+    import aiohttp
 
     from pysaleryd.client import Client
 
-    async with Client(WEBSOCKET_URL, WEBSOCKET_PORT) as hrv_client:
-        await asyncio.sleep(2) # wait a bit for some data
-        print(client.data)
+    async with aiohttp.ClientSession() as session:
+        async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
+            await asyncio.sleep(2) # wait a bit for some data
+            print(client.data)
 
 Read data using callback
 ------------------------
@@ -51,15 +54,19 @@ Read data using callback
 .. code-block:: python3
 
     import asyncio
+    import aiohttp
 
     from pysaleryd.client import Client
 
-    def handle_messge(raw_message: str):
-        print(msg)
+    def handle_message(data: dict):
+        print(data)
 
-    async with Client(WEBSOCKET_URL, WEBSOCKET_PORT) as hrv_client:
-        hrv_client.add_handler(handle_message)
-        await asyncio.sleep(3) # wait around a bit for data
+    update_interval = 10 # call handle_message every 30 seconds
+
+    async with aiohttp.ClientSession() as session:
+        async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session, update_interval) as hrv_client:
+            hrv_client.add_handler(handle_message)
+            await asyncio.sleep(update_interval +1 ) # wait around a bit for data
 
 Send control command
 --------------------
@@ -68,32 +75,13 @@ Command syntax can be found by dissecting websocket messages in the built in web
 .. code-block:: python3
 
     import asyncio
+    import aiohttp
 
     from pysaleryd.client import Client
 
-    async with Client(WEBSOCKET_URL, WEBSOCKET_PORT) as hrv_client:
-        await hrv_client.send_command("MF", 0) # send command to set fan mode
-
-CLI usage
-=========
-
-List command line usage
-
-.. code-block:: shell
-
-    $ pysaleryd -h
-
-Connect to system and capture websocket data to stdout
-
-.. code-block:: shell
-
-    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT --listen [-t TIMEOUT]
-
-Send command to system
-
-.. code-block:: shell
-
-    $ pysaleryd --host WEBSOCKET_URL --port WEBSOCKET_PORT --send --key MF --data 0
+    async with aiohttp.ClientSession() as session:
+        async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
+            await hrv_client.send_command("XX", 1)
 
 Troubleshooting
 ===============

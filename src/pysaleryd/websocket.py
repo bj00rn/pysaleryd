@@ -132,7 +132,9 @@ class WSClient:
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         _LOGGER.debug("Received: %s", msg.data)
                         asyncio.create_task(
-                            self._session_handler_callback(Signal.DATA, data=msg.data)
+                            self._session_handler_callback(
+                                Signal.DATA, data=msg.data, state=self._state
+                            )
                         )
                         continue
 
