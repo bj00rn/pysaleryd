@@ -20,7 +20,7 @@ __license__ = "MIT"
 async def _hrv_client(ws_server):
     """HRV Client"""
     async with aiohttp.ClientSession() as session:
-        async with Client("localhost", 3001, session) as client:
+        async with Client("localhost", 3001, session, 3) as client:
             yield client
 
 
@@ -33,15 +33,22 @@ async def test_client_connect(hrv_client: "Client"):
 @pytest.mark.asyncio
 async def test_handler(hrv_client: "Client", mocker):
     """Test handler callback"""
-    handler = mocker.Mock()
+
+    data = None  # noqa: F841
+
+    def handler(_data):
+        nonlocal data
+        data = _data
 
     def broken_handler(data):
         raise Exception()  # pylint: disable=W0719
 
     hrv_client.add_handler(broken_handler)
     hrv_client.add_handler(handler)
-    await asyncio.sleep(3)
-    handler.assert_called()
+    await asyncio.sleep(5)
+
+    assert isinstance(data, dict)
+    assert any(data.keys())
 
 
 @pytest.mark.asyncio

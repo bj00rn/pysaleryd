@@ -11,7 +11,8 @@ class ParseError(BaseException):
 class Parser:
     """Message parser. Parse HRV system messages"""
 
-    def to_str(self, key, value):
+    @staticmethod
+    def to_str(key, value):
         """Parse message to string
 
         Args:
@@ -23,7 +24,8 @@ class Parser:
         """
         return f"#{key}:{value}\r"
 
-    def from_str(self, msg: str):
+    @staticmethod
+    def from_str(msg: str):
         """Parse message string
 
         Args:
