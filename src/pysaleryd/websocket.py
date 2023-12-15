@@ -81,7 +81,7 @@ class WSClient:
             return
 
         if self._state == State.RETRYING:
-            _LOGGER.info(
+            _LOGGER.warning(
                 "Reconnecting to websocket failed (%s:%s) scheduling retry at an interval of %i seconds",  # noqa: E501
                 self._host,
                 self._port,
@@ -126,8 +126,8 @@ class WSClient:
                         break
 
                     if msg.type == aiohttp.WSMsgType.ERROR:
-                        _LOGGER.warning("Websocket error (%s)", msg)
-                        break
+                        _LOGGER.warning("Received websocket error (%s)", msg)
+                        continue
 
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         _LOGGER.debug("Received: %s", msg.data)
