@@ -103,7 +103,7 @@ jobs:
 
   publish: # publish release package
     environment:
-      name: pypi-publish
+      name: Upload release to PyPI
     needs: finalize
     if: ${{ contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && contains(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
@@ -116,24 +116,8 @@ jobs:
       - name: Retrieve pre-built distribution files
         uses: actions/download-artifact@v3
         with: {name: python-distribution-files, path: dist/}
-      - name: Publish Package (pypi test)
-        env:
-          # TODO: Set your PYPI_TOKEN as a secret using GitHub UI
-          # - https://pypi.org/help/#apitoken
-          # - https://docs.github.com/en/actions/security-guides/encrypted-secrets
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_TEST }}
-        run: pipx run tox -e publish
-      - name: Publish Package (pypi)
-        env:
-          # TODO: Set your PYPI_TOKEN as a secret using GitHub UI
-          # - https://pypi.org/help/#apitoken
-          # - https://docs.github.com/en/actions/security-guides/encrypted-secrets
-          TWINE_REPOSITORY: pypi
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: pipx run tox -e publish
-
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
   github_pages: # deploy docs to github pages
     needs:
       publish
