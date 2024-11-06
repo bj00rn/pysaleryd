@@ -1,4 +1,5 @@
 """Websocket client to listen and send messages to and from HRV system."""
+
 import asyncio
 import enum
 import logging
@@ -25,7 +26,7 @@ class State(enum.Enum):
     STOPPED = "stopped"
 
 
-RETRY_TIMER: Final = 15
+RETRY_INTERVAL: Final = 15
 RECEIVE_TIMEOUT: Final = 5
 TIMEOUT: Final = 5
 
@@ -55,6 +56,7 @@ class WSClient:
 
         self._loop = asyncio.get_running_loop()
         self._task = None
+        self._retry_timer = None
         self._ws = None
         self._state = self._previous_state = State.NONE
 
@@ -85,10 +87,10 @@ class WSClient:
                 "Reconnecting to websocket failed (%s:%s) scheduling retry at an interval of %i seconds",  # noqa: E501
                 self._host,
                 self._port,
-                RETRY_TIMER,
+                RETRY_INTERVAL,
             )
             self._state_changed()
-            self._loop.call_later(RETRY_TIMER, self.start)
+            self._retry_timer = self._loop.call_later(RETRY_INTERVAL, self.start)
         else:
             self._set_state(State.RETRYING)
             _LOGGER.info(
@@ -172,10 +174,14 @@ class WSClient:
         _LOGGER.info(
             "Shutting down connection to websocket (%s:%s)", self._host, self._port
         )
-        self._set_state(State.STOPPED)
-        self._state_changed()
+
         if self._task:
             self._task.cancel()
+        if self._retry_timer:
+            self._retry_timer.cancel()
+
+        self._set_state(State.STOPPED)
+        self._state_changed()
 
     async def send_message(self, message: str):
         """Send message to system

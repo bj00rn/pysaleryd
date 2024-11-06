@@ -46,7 +46,10 @@ class Client:
         return self
 
     async def __aexit__(self, _type, value, traceback):
-        self.disconnect()
+        try:
+            pass
+        finally:
+            self.disconnect()
 
     async def _call_handlers_task(self):
         """Call handlers with data"""
@@ -98,8 +101,13 @@ class Client:
             while self._socket.state != State.RUNNING:
                 await asyncio.sleep(0.2)
 
-        self._socket.start()
-        await asyncio.gather(check_connection())
+        try:
+            self._socket.start()
+            await asyncio.gather(check_connection())
+        except asyncio.CancelledError:
+            _LOGGER.debug("Connect was cancelled")
+            self.disconnect()
+            raise
 
     def disconnect(self):
         """Disconnect from system"""
