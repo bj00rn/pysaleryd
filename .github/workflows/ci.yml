@@ -103,7 +103,7 @@ jobs:
 
   publish: # publish release package
     environment:
-      name: Upload release to PyPI
+      name: pypi-publish
     needs: finalize
     if: ${{ contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && contains(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
