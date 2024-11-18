@@ -43,10 +43,14 @@ Read data
 
     from pysaleryd.client import Client
 
-    async with aiohttp.ClientSession() as session:
-        async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
-            await asyncio.sleep(2) # wait a bit for some data
-            print(client.data)
+    async def work():
+        async with aiohttp.ClientSession() as session:
+            async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
+                await asyncio.sleep(2) # wait a bit for some data
+                print(client.data)
+
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(work())
 
 Read data using callback
 ------------------------
@@ -61,12 +65,15 @@ Read data using callback
     def handle_message(data: dict):
         print(data)
 
-    update_interval = 10 # call handle_message every 30 seconds
+    async def work():
+        update_interval = 10 # call handle_message every 30 seconds
+        async with aiohttp.ClientSession() as session:
+            async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session, update_interval) as hrv_client:
+                hrv_client.add_handler(handle_message)
+                await asyncio.sleep(update_interval +1 ) # wait around a bit for data
 
-    async with aiohttp.ClientSession() as session:
-        async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session, update_interval) as hrv_client:
-            hrv_client.add_handler(handle_message)
-            await asyncio.sleep(update_interval +1 ) # wait around a bit for data
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(work())
 
 Send control command
 --------------------
@@ -79,9 +86,13 @@ Command syntax can be found by dissecting websocket messages in the built in web
 
     from pysaleryd.client import Client
 
-    async with aiohttp.ClientSession() as session:
-        async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
-            await hrv_client.send_command("XX", 1)
+    async def work():
+        async with aiohttp.ClientSession() as session:
+            async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
+                await hrv_client.send_command("MF", 1)
+
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(work())
 
 Troubleshooting
 ===============

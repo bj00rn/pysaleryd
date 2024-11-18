@@ -6,7 +6,9 @@ from typing import Callable
 
 import aiohttp
 
-from .utils import ErrorCache, ParseError, Parser
+from .const import DataKeyEnum, MessageTypeEnum
+from .helpers import ErrorCache
+from .utils import IncomingMessage, OutgoingMessage, ParseError
 from .websocket import Signal, State, WSClient
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ class Client:
         self._url = url
         self._port = port
         self._session = session
-        self._data = {}
+        self._data: dict[DataKeyEnum, str] = {}
         self._error_cache = ErrorCache()
         self._handlers = set()
         self._socket = WSClient(self._session, self._url, self._port, self._handler)
@@ -77,19 +79,25 @@ class Client:
                 msg = await self._incoming_queue.get()
                 # update state
                 # if ack force push state to handler
-                (key, value, is_ack) = Parser.from_str(msg)
+                (key, value, message_type) = IncomingMessage.from_str(msg)
 
-                if key in ["*EA", "*EB", "*EZ"]:
-                    if key == "*EA":
+                if key in [
+                    DataKeyEnum.ERROR_FRAME_START,
+                    DataKeyEnum.ERROR_MESSAGE,
+                    DataKeyEnum.ERROR_FRAME_END,
+                ]:
+                    if key == DataKeyEnum.ERROR_FRAME_START:
                         self._error_cache.begin_frame()
-                    if key == "*EB":
+                    if key == DataKeyEnum.ERROR_MESSAGE:
                         self._error_cache.add(value)
-                    if key == "*EZ":
+                    if key == DataKeyEnum.ERROR_FRAME_END:
                         self._error_cache.end_frame()
-                        self._data["*EB"] = self._error_cache.data
+                        self._data[
+                            DataKeyEnum.ERROR_MESSAGE.value
+                        ] = self._error_cache.data
                 else:
                     self._data[key] = value
-                    if is_ack:
+                    if message_type == MessageTypeEnum.ACK_OK:
                         self._call_handlers()
             except ParseError:
                 pass
@@ -123,13 +131,13 @@ class Client:
         """Remove event handler"""
         self._handlers.remove(handler)
 
-    async def send_command(self, key, value: str | int):
+    async def send_command(self, key: MessageTypeEnum, value: str | int):
         """Send command to HRV"""
-        message = Parser.to_str(key, value)
+        message = OutgoingMessage(key, value)
 
         async def ack_command():
             """Should probably ack command here, just sleep for now"""
-            await asyncio.sleep(2)
+            await asyncio.sleep(0.5)
 
-        await self._socket.send_message(message)
+        await self._socket.send_message(str(message))
         await asyncio.gather(ack_command())

@@ -1,5 +1,9 @@
 """Utils"""
 import logging
+from dataclasses import dataclass
+from typing import Any
+
+from .const import DataKeyEnum, MessageTypeEnum, PayloadSeparatorEnum
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -8,24 +12,22 @@ class ParseError(BaseException):
     """Parse error. Raised when message parsing fails"""
 
 
-class Parser:
-    """Message parser. Parse HRV system messages"""
+@dataclass
+class OutgoingMessage:
+    """Outgoing message to system"""
+
+    key: DataKeyEnum
+    value: str
+
+    def __str__(self):
+        return f"#{self.key}:{self.value}\r"
+
+
+class IncomingMessage:
+    """Incoming message from system"""
 
     @staticmethod
-    def to_str(key, value):
-        """Parse message to string
-
-        Args:
-            key (_type_): message key
-            value (_type_): message value
-
-        Returns:
-            _type_: _description_
-        """
-        return f"#{key}:{value}\r"
-
-    @staticmethod
-    def from_str(msg: str):
+    def from_str(msg: str) -> tuple[DataKeyEnum, str, MessageTypeEnum]:
         """Parse message string
 
         Args:
@@ -35,58 +37,72 @@ class Parser:
             ParseError: if parsing fails
 
         Returns:
-            (key, value): parsed message key and value
+            (key, value, message_type): parsed message key and value
         """
-        is_ack_message = False
+        if msg[0] != PayloadSeparatorEnum.MESSAGE_START:
+            raise ParseError(f"Unsupported payload, {msg}")
+        else:
+            msg = msg[1::]
         try:
-            if msg[0] == "#":
-                if msg[1] == "$":
-                    # ack message, strip ack char and treat as state update
-                    msg = msg[1::]
-                    is_ack_message = True
-                value = msg[1::].split(":")[1].strip()
-                value = int(value) if value.isnumeric() else value
+            [key, payload] = [
+                v.strip() for v in msg.split(PayloadSeparatorEnum.PAYLOAD_START)
+            ]
 
-                if msg[1] != "*":
-                    # messages not beginning with * are arrays of integers
-                    # [value, min, max] or [value, min, max, time_left]
-                    value = [
-                        v if isinstance(v, int) else int(v.strip())
-                        for v in value.split("+")
-                    ]
-                key = msg[1::].split(":")[0]
-                parsed = (key, value, is_ack_message)
-                return parsed
+            if key[0] in [PayloadSeparatorEnum.ACK_ERROR, PayloadSeparatorEnum.ACK_OK]:
+                return (
+                    key[1::],
+                    payload,
+                    MessageTypeEnum.ACK_OK.value
+                    if key[0] == PayloadSeparatorEnum.ACK_OK
+                    else MessageTypeEnum.ACK_ERROR.value,
+                )
+            else:
+                return (key, payload, MessageTypeEnum.MESSAGE.value)
         except Exception as exc:
             raise ParseError(f"Failed to parse message {msg}") from exc
 
-        raise ParseError("Failed to parse message {msg}")
+
+@dataclass
+class SystemProperty:
+    """HRV system property"""
+
+    key: DataKeyEnum = None
+    value: Any = None
+
+    @classmethod
+    def from_str(cls, key, raw_value):
+        """Create instance from string"""
+        return cls(key=key, value=raw_value.strip())
 
 
-class ErrorCache:
-    """Error cache, caches previous data until frame is complete"""
+@dataclass
+class RangedSystemProperty(SystemProperty):
+    """HRV System property with min max"""
 
-    def __init__(self) -> None:
-        self._data = []
-        self._next = []
-        self._is_collecting = False
+    min_value: int = None
+    max_value: int = None
+    time_left: int = None
 
-    @property
-    def data(self):
-        """Get error data"""
-        return self._data
+    @classmethod
+    def from_str(cls, key, raw_value: str):
+        """Create instance from from string"""
+        [value, min_value, max_value, time_left] = [
+            int(v) if v.isnumeric() else int(v.strip()) for v in raw_value.split("+")
+        ]
+        return cls(
+            key=key,
+            value=value,
+            min_value=min_value,
+            max_value=max_value,
+            time_left=time_left,
+        )
 
-    def add(self, message):
-        """Add data to cache"""
-        if self._is_collecting:
-            self._next.append(message)
 
-    def end_frame(self):
-        """Mark data frame as complete"""
-        self._data = self._next
-        self._next = []
-        self._is_collecting = False
+@dataclass
+class ErrorSystemProperty(SystemProperty):
+    key: DataKeyEnum
+    value: list[str]
 
-    def begin_frame(self):
-        """Begin new frame"""
-        self._is_collecting = True
+    @classmethod
+    def from_str(cls, key, raw_value):
+        raise NotImplementedError()

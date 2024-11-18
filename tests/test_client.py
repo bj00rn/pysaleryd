@@ -77,7 +77,7 @@ async def test_reconnect(hrv_client: "Client", ws_server: "web_server.Server"):
 @pytest.mark.asyncio
 async def test_send_command(hrv_client: "Client"):
     """Test send command"""
-    await hrv_client.send_command("MF", "0")
+    await hrv_client.send_command("MF", 0)
 
 
 @pytest.mark.asyncio
