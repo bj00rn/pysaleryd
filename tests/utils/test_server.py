@@ -47,10 +47,16 @@ class WebsocketView(web.View):
 
     async def incoming_message_handler(self):
         """Handle incoming messages"""
-        while True:
-            msg = await self.receive.get()  # noqa: F841
-            if not self.stream_handler:
-                self.stream_handler = asyncio.create_task(self.data_generator())
+        try:
+            while True:
+                msg = await self.receive.get()  # noqa: F841
+                if not self.stream_handler:
+                    self.stream_handler = asyncio.create_task(self.data_generator())
+        except asyncio.CancelledError:
+            if self.stream_handler:
+                self.stream_handler.cancel()
+            self.receive.task_done()
+            raise
 
     async def listener(self, ws: WebSocketResponse):
         """Push incoming messages to queue"""
@@ -65,16 +71,21 @@ class WebsocketView(web.View):
 
     async def websocket_handler(self, request):
         """Websocket handler"""
-        ws = aiohttp.web.WebSocketResponse()
-        await ws.prepare(request)
-        self._message_handler = asyncio.create_task(self.incoming_message_handler())
-        self._outgoing_message_handler = asyncio.create_task(
-            self.outgoing_message_handler(ws)
-        )
-        self._pinger = asyncio.create_task(self.pinger())
-        self._listener = asyncio.create_task(self.listener(ws), name="Serve")
-        await self._listener
-        return ws
+        try:
+            ws = aiohttp.web.WebSocketResponse()
+            await ws.prepare(request)
+            self._message_handler = asyncio.create_task(self.incoming_message_handler())
+            self._outgoing_message_handler = asyncio.create_task(
+                self.outgoing_message_handler(ws)
+            )
+            self._pinger = asyncio.create_task(self.pinger())
+            self._listener = asyncio.create_task(self.listener(ws), name="Serve")
+            await self._listener
+            return ws
+        finally:
+            self._outgoing_message_handler.cancel()
+            self._message_handler.cancel()
+            self._pinger.cancel()
 
     async def get(self):
         """GET
