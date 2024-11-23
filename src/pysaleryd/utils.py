@@ -1,9 +1,15 @@
 """Utils"""
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
 
-from .const import DataKeyEnum, MessageTypeEnum, PayloadSeparatorEnum
+if TYPE_CHECKING:
+    from typing import Optional, Union
+    from .const import DataKeyEnum
+
+from .const import MessageTypeEnum, PayloadSeparatorEnum
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -62,47 +68,52 @@ class IncomingMessage:
             raise ParseError(f"Failed to parse message {msg}") from exc
 
 
-@dataclass
-class SystemProperty:
-    """HRV system property"""
+class BaseSystemProperty:
+    """HRV System property"""
 
-    key: DataKeyEnum = None
-    value: Any = None
+
+class SystemProperty(BaseSystemProperty):
+    """HRV System property with value, min, max"""
+
+    def __init__(
+        self,
+        key: DataKeyEnum,
+        value: Optional[int | str] = None,
+        min_value: Optional[int | str] = None,
+        max_value: Optional[int | str] = None,
+        *_args,
+    ):
+        self.key = key
+        self.value = value
+        self.min_value = min_value
+        self.max_value = max_value
 
     @classmethod
-    def from_str(cls, key, raw_value):
-        """Create instance from string"""
-        return cls(key=key, value=raw_value.strip())
-
-
-@dataclass
-class RangedSystemProperty(SystemProperty):
-    """HRV System property with min max"""
-
-    min_value: int = None
-    max_value: int = None
-    time_left: int = None
-
-    @classmethod
-    def from_str(cls, key, raw_value: str):
+    def from_str(cls, key: DataKeyEnum, raw_value: str):
         """Create instance from from string"""
-        [value, min_value, max_value, time_left] = [
-            int(v) if v.isnumeric() else int(v.strip()) for v in raw_value.split("+")
-        ]
-        return cls(
-            key=key,
-            value=value,
-            min_value=min_value,
-            max_value=max_value,
-            time_left=time_left,
+
+        def maybe_cast(x: str) -> Union[int, float, str, None]:
+            """Cast value if it is numeric"""
+            if x is None:
+                return x
+            if x.isdigit():
+                return int(x)
+            if x.replace(".", "", 1).isdigit():
+                return float(x)
+            return x
+
+        [*positions] = (
+            [maybe_cast(v.strip()) for v in raw_value.split("+")]
+            if raw_value is not None
+            else []
         )
 
+        return cls(key, *positions)
 
-@dataclass
-class ErrorSystemProperty(SystemProperty):
-    key: DataKeyEnum
-    value: list[str]
 
-    @classmethod
-    def from_str(cls, key, raw_value):
-        raise NotImplementedError()
+class ErrorSystemProperty(BaseSystemProperty):
+    """HRV System error property"""
+
+    def __init__(self, key: DataKeyEnum, value: Optional[list[str]] = None):
+        self.key = key
+        self.value = value

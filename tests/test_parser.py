@@ -2,14 +2,8 @@ import logging
 
 import pytest
 
-from pysaleryd.utils import (
-    DataKeyEnum,
-    IncomingMessage,
-    MessageTypeEnum,
-    ParseError,
-    RangedSystemProperty,
-    SystemProperty,
-)
+from pysaleryd.const import DataKeyEnum, MessageTypeEnum
+from pysaleryd.utils import IncomingMessage, ParseError, SystemProperty
 
 __author__ = "Björn Dalfors"
 __copyright__ = "Björn Dalfors"
@@ -71,23 +65,20 @@ def test_parse_error():
         IncomingMessage.from_str("wer")
 
 
-def test_parse_ranged_system_property():
-    """Test parse RangedSystemProperty from str"""
-    key = "MF"
-    value_str = "1+ 2+ 3+ 10"
-    parsed = RangedSystemProperty.from_str(key, value_str)
-    assert isinstance(parsed, RangedSystemProperty)
-    assert parsed.key == DataKeyEnum.MODE_FAN
-    assert parsed.value == 1
-    assert parsed.min_value == 2
-    assert parsed.max_value == 3
-    assert parsed.time_left == 10
-
-
 def test_parse_system_property():
     """Test parse SystemProperty"""
     key = DataKeyEnum.INSTALLER_PASSWORD
     value_str = "1"
     parsed = SystemProperty.from_str(key, value_str)
     assert parsed.key == DataKeyEnum.INSTALLER_PASSWORD
-    assert parsed.value == "1"
+    assert parsed.value == 1
+
+    value_str = "1+ 2+ 3+0"
+    parsed = SystemProperty.from_str(key, value_str)
+    assert parsed.value == 1
+    assert parsed.min_value == 2
+    assert parsed.max_value == 3
+
+    value_str = "test"
+    parsed = SystemProperty.from_str(key, value_str)
+    assert parsed.value == "test"
