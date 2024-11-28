@@ -118,6 +118,7 @@ jobs:
         with: {name: python-distribution-files, path: dist/}
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
   github_pages: # deploy docs to github pages
     needs:
       publish
