@@ -1,21 +1,34 @@
 from enum import IntEnum, StrEnum
 
 
-class MessageTypeEnum(IntEnum):
+class ConnectionState(StrEnum):
+    """State of connection."""
+
+    NONE = ""
+    RETRYING = "retrying"
+    RUNNING = "running"
+    STOPPED = "stopped"
+
+
+class MessageType(IntEnum):
+    """Message type"""
+
     ACK_OK = 0
     ACK_ERROR = 1
     MESSAGE = 2
     RAW = 3
 
 
-class PayloadSeparatorEnum(StrEnum):
+class PayloadSeparator(StrEnum):
+    """Message payload separator"""
+
     ACK_OK = "$"
     ACK_ERROR = "!"
     MESSAGE_START = "#"
     PAYLOAD_START = ":"
 
 
-class DataKeyEnum(StrEnum):
+class DataKey(StrEnum):
     """Data key enumerator"""
 
     # Scalar
@@ -41,7 +54,7 @@ class DataKeyEnum(StrEnum):
     INSTALLER_PHONE = "IC"
     INSTALLER_WEBSITE = "IE"
 
-    # Values
+    # Vecto x+ x+ x+x
     CONTROL_SYSTEM_STATE = "MP"
     MODE_HEATER_POWER_RATING = "MG"
     COOLING_MODE = "MK"
