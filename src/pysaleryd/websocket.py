@@ -1,205 +1,155 @@
-"""Websocket client to listen and send messages to and from HRV system."""
-
 import asyncio
-import enum
 import logging
-from typing import Awaitable, Callable, Final
+from typing import Callable
 
-import aiohttp
+from websockets.asyncio.client import ClientConnection, connect
+from websockets.exceptions import ConnectionClosed
+
+from .const import ConnectionStateEnum
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Signal(enum.Enum):
-    """What is the content of the callback."""
-
-    CONNECTION_STATE = "state"
-    DATA = "data"
-
-
-class State(enum.Enum):
-    """State of the connection."""
-
-    NONE = ""
-    RETRYING = "retrying"
-    RUNNING = "running"
-    STOPPED = "stopped"
-
-
-RETRY_INTERVAL: Final = 15
-RECEIVE_TIMEOUT: Final = 5
-TIMEOUT: Final = 5
-
-
-class WSClient:
-    """Websocket Client"""
+class ReconnectingWebsocketClient:
+    """Reconnecting websocket client"""
 
     def __init__(
         self,
-        session: aiohttp.ClientSession,
         host: str,
         port: int,
-        callback: Callable[[Signal, str | None, State | None], Awaitable[None]],
-    ) -> None:
-        """Create websocket
-
-        Args:
-            session (aiohttp.ClientSession): client session
-            host (str): system host
-            port (int): system port
-            callback (Callable[[Signal, str  |  None, State  |  None], Awaitable[None]]): callback for state and data events  # noqa:
-        """
-        self._session = session
+        on_message: callable = None,
+        on_state_change: callable = None,
+        connect_timeout=15,
+    ):
         self._host = host
         self._port = port
-        self._session_handler_callback = callback
-
-        self._loop = asyncio.get_running_loop()
-        self._task = None
-        self._retry_timer = None
-        self._ws = None
-        self._state = self._previous_state = State.NONE
+        self._connect_timeout = connect_timeout
+        self._outgoing_queue: asyncio.Queue[str] = asyncio.Queue()
+        self._incoming_queue: asyncio.Queue[str] = asyncio.Queue()
+        self._on_message = on_message
+        self._on_state_change = on_state_change
+        self._state = ConnectionStateEnum.NONE
+        self._tasks = []
 
     @property
-    def state(self) -> State:
-        """State of websocket."""
+    def state(self):
+        """State of connection"""
         return self._state
 
-    def _set_state(self, value: State) -> None:
-        """Set state of websocket."""
-        self._state = value
+    def _set_state(self, new_state):
+        self._state = new_state
+        if self._on_state_change:
+            self._on_state_change(new_state, self._state)  # is this blocking?
 
-    def _state_changed(self) -> None:
-        """Signal state change."""
-        asyncio.create_task(
-            self._session_handler_callback(
-                Signal.CONNECTION_STATE, data=None, state=self._state
-            )
-        )
+    async def _do_on_message(self, callback: Callable | None):
+        while True:
+            message = await self._incoming_queue.get()
+            if callback:
+                callback(message)
+            self._incoming_queue.task_done()
 
-    def _retry(self) -> None:
-        """Retry websocket connection"""
-        if self._state == State.STOPPED:
-            return
+    def _do_on_state_change(self, callback: Callable | None):
+        if callback:
+            callback(self.state)
 
-        if self._state == State.RETRYING:
-            _LOGGER.warning(
-                "Reconnecting to websocket failed (%s:%s) scheduling retry at an interval of %i seconds",  # noqa: E501
-                self._host,
-                self._port,
-                RETRY_INTERVAL,
-            )
-            self._state_changed()
-            self._retry_timer = self._loop.call_later(RETRY_INTERVAL, self.start)
-        else:
-            self._set_state(State.RETRYING)
-            _LOGGER.info(
-                "Reconnecting to websocket (%s:%s)",
-                self._host,
-                self._port,
-            )
-            self.start()
+    async def send(self, message: str):
+        """Add message to send queue"""
+        if not isinstance(message, str):
+            raise ValueError(f"Unsupported message type {type(message)}")
+        await self._outgoing_queue.put(message)
 
-    async def _running(self) -> None:
-        """Start websocket connection task"""
+    async def runner(self):
+        """Send and receive messages on websocket"""
 
-        try:
-            url = f"http://{self._host}:{self._port}"
-
+        async def consumer(ws: ClientConnection):
+            """Enqueue messages received on websocket"""
             try:
-                _LOGGER.info("Connecting to websocket (%s:%s)", self._host, self._port)
-                self._ws = await self._session.ws_connect(
-                    url, timeout=TIMEOUT, receive_timeout=RECEIVE_TIMEOUT
-                )
-                self._set_state(State.RUNNING)
-                self._state_changed()
-                _LOGGER.info("Connected to websocket (%s:%s)", self._host, self._port)
-                # server won't start sending unless data is received
-                await self._ws.send_str("#\r")
-                await self._ws.receive_str()
+                async for message in ws:
+                    if isinstance(message, str):
+                        _LOGGER.debug("Message received %s", message)
+                        await self._incoming_queue.put(message)
+            except asyncio.CancelledError:
+                _LOGGER.debug("Consumer was cancelled")
+                raise
 
-                async for msg in self._ws:
-                    if msg.type == aiohttp.WSMsgType.CLOSE:
-                        _LOGGER.warning(
-                            "Connection to websocket closed by remote (%s:%s)",
-                            self._host,
-                            self._port,
-                        )
-                        break
+        async def producer(ws: ClientConnection):
+            """Send queued messages on websocket"""
+            try:
+                while True:
+                    message = await self._outgoing_queue.get()
+                    _LOGGER.debug("Sending message %s", message)
+                    await ws.send(message)
+                    self._outgoing_queue.task_done()
+            except asyncio.CancelledError:
+                _LOGGER.debug("Producer cancelled")
+                raise
 
-                    if msg.type == aiohttp.WSMsgType.ERROR:
-                        _LOGGER.warning("Received websocket error (%s)", msg)
-                        continue
-
-                    if msg.type == aiohttp.WSMsgType.TEXT:
-                        _LOGGER.debug("Received: %s", msg.data)
-                        asyncio.create_task(
-                            self._session_handler_callback(
-                                Signal.DATA, data=msg.data, state=self._state
-                            )
-                        )
-                        continue
-
-                    if msg.type != aiohttp.WSMsgType.TEXT:
-                        _LOGGER.warning(
-                            "Received unexpected message type: %s", msg.type
-                        )
-                        continue
-
-            except (aiohttp.ClientError, aiohttp.ClientOSError):
-                _LOGGER.warning(
-                    "Connection failed (%s:%s)", self._host, self._port, exc_info=True
-                )
-            except asyncio.TimeoutError as exc:
-                _LOGGER.warning("Read timeout: %s", exc)
+        async def websocket_handler(websocket: ClientConnection):
+            """Websocket handler"""
+            try:
+                tasks: list[asyncio.Task] = []
+                tasks.append(asyncio.create_task(consumer(websocket), name="consumer"))
+                tasks.append(asyncio.create_task(producer(websocket), name="producer"))
+                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             finally:
-                if self._ws:
-                    await self._ws.close()
-                    _LOGGER.info("Disconnected from (%s:%s)", self._host, self._port)
+                try:
+                    for task in tasks:
+                        task.cancel()
+                except UnboundLocalError:
+                    pass
 
-        except asyncio.CancelledError:
-            _LOGGER.debug("Runner cancelled")
-            raise
-        self._retry()
+        uri = f"ws://{self._host}:{self._port}"
+        while True:
+            try:
+                _LOGGER.info("Connecting to %s", uri)
+                async for websocket in connect(uri, open_timeout=self._connect_timeout):
+                    self._set_state(ConnectionStateEnum.RUNNING)
+                    try:
+                        _LOGGER.info("Connection established to %s", uri)
+                        await websocket_handler(
+                            websocket
+                        )  # this will return if connection is closed OK by remote
+                        _LOGGER.warning("Connection to %s was closed, will retry", uri)
+                        self._set_state(ConnectionStateEnum.RETRYING)
+                    except ConnectionClosed:
+                        _LOGGER.warning(
+                            "Connection to %s was closed unexpectedly, will retry", uri
+                        )
+                        # reconnect if connection fails
+                        self._set_state(ConnectionStateEnum.RETRYING)
+                        continue
 
-    def start(self) -> None:
-        """Start websocket and update its state."""
-        if self._state == State.RUNNING:
-            _LOGGER.debug("Already running")
-            return
-        self._task = asyncio.create_task(self._running())
+            except (OSError, TimeoutError):
+                _LOGGER.error("Failed to connect to %s, will retry", uri)
+                self._set_state(ConnectionStateEnum.RETRYING)
+                continue
+            except asyncio.CancelledError:
+                _LOGGER.info("Shutting down connection to %s", uri)
+                self._set_state(ConnectionStateEnum.STOPPED)
+                raise
 
-    def stop(self) -> None:
-        """Close websocket connection"""
-        _LOGGER.info(
-            "Shutting down connection to websocket (%s:%s)", self._host, self._port
-        )
-
-        if self._task:
-            self._task.cancel()
-        if self._retry_timer:
-            self._retry_timer.cancel()
-
-        self._set_state(State.STOPPED)
-        self._state_changed()
-
-    async def send_message(self, message: str):
-        """Send message to system
-
-        Args:
-            message (str): message
-
-        Returns:
-            _type_: Coroutine[Any, Any, None]
-        """
-        try:
-            _LOGGER.debug("Sending message %s to websocket", message)
-            return await self._ws.send_str(message)
-        except Exception:
-            _LOGGER.error(
-                "Failed to send message %s to websocket. State is %s",
-                message,
-                self._state,
-                exc_info=True,
+    def connect(self):
+        """Connect to server"""
+        if self._state in [ConnectionStateEnum.NONE, ConnectionStateEnum.STOPPED]:
+            self._tasks.append(asyncio.create_task(self.runner(), name="runner"))
+            self._tasks.append(
+                asyncio.create_task(
+                    self._do_on_message(self._on_message), name="on_message"
+                )
             )
-            raise
+
+    def close(self):
+        """Close connection and clean up"""
+        try:
+            pass
+        finally:
+            for task in self._tasks:
+                task.cancel()
+
+    async def __aenter__(self):
+        """Start socket and wait for connection"""
+        self.connect()
+        return self
+
+    async def __aexit__(self, *args, **kwargs):
+        self.close()

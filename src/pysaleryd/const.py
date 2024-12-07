@@ -1,6 +1,15 @@
 from enum import IntEnum, StrEnum
 
 
+class ConnectionStateEnum(StrEnum):
+    """State of the connection."""
+
+    NONE = ""
+    RETRYING = "retrying"
+    RUNNING = "running"
+    STOPPED = "stopped"
+
+
 class MessageTypeEnum(IntEnum):
     ACK_OK = 0
     ACK_ERROR = 1

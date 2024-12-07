@@ -4,12 +4,10 @@ import asyncio
 import logging
 from typing import Callable
 
-import aiohttp
-
 from .const import DataKeyEnum, MessageTypeEnum
 from .helpers import ErrorCache
 from .utils import IncomingMessage, OutgoingMessage, ParseError
-from .websocket import Signal, State, WSClient
+from .websocket import ConnectionStateEnum, ReconnectingWebsocketClient
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -17,44 +15,45 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 class Client:
     """Client to manage communication with HRV"""
 
-    def __init__(
-        self, url: str, port: int, session: aiohttp.ClientSession, update_interval=30
-    ):
+    def __init__(self, host: str, port: int, update_interval=30, connect_timeout=15):
         self._update_interval = update_interval
-        self._url = url
+        self._host = host
         self._port = port
-        self._session = session
         self._data: dict[DataKeyEnum, str] = {}
         self._error_cache = ErrorCache()
-        self._handlers = set()
-        self._socket = WSClient(self._session, self._url, self._port, self._handler)
-        self._message_handler_task = asyncio.create_task(self._message_handler())
-        self._data_handler_task = asyncio.create_task(self._call_handlers_task())
-        self._incoming_queue = asyncio.queues.Queue()
+        self._handlers: set[Callable[[dict[DataKeyEnum, str]]]] = set()
+        self._connect_timeout = connect_timeout
+        self._state = ConnectionStateEnum.NONE
+        self._tasks = [asyncio.create_task(self._call_handlers_task())]
+        self._websocket: ReconnectingWebsocketClient = None
 
     @property
     def state(self):
-        """Get internal socket state"""
-        return self._socket.state
+        """State of the underlying websocket connection"""
+        return self._websocket.state
 
     @property
     def data(self):
         """Get data from system"""
         return self._data
 
-    async def __aenter__(self):
-        """Start socket and wait for connection"""
-        await self.connect()
-        return self
+    def connect(self):
+        """Connect to HRV and begin receiving"""
 
-    async def __aexit__(self, _type, value, traceback):
-        try:
-            pass
-        finally:
-            self.disconnect()
+        async def send_start_message(ws: ReconnectingWebsocketClient):
+            await ws.send("#:\r")
+
+        self._websocket = ReconnectingWebsocketClient(
+            host=self._host,
+            port=self._port,
+            connect_timeout=self._connect_timeout,
+            on_message=self._incoming_message_handler,
+        )
+        self._websocket.connect()
+        self._tasks.append(asyncio.create_task(send_start_message(self._websocket)))
 
     async def _call_handlers_task(self):
-        """Call handlers with data"""
+        """Call handlers with data at update_interval"""
         while True:
             self._call_handlers()
             await asyncio.sleep(self._update_interval)
@@ -67,61 +66,40 @@ class Client:
             except Exception:
                 _LOGGER.warning("Failed to call handler", exc_info=True)
 
-    async def _handler(
-        self, signal: Signal, data: str, state: "State" = None
-    ):  # pylint: disable W0613
-        if signal == Signal.DATA:
-            await self._incoming_queue.put(data)
-
-    async def _message_handler(self):
-        while True:
-            try:
-                msg = await self._incoming_queue.get()
-                # update state
-                # if ack force push state to handler
-                (key, value, message_type) = IncomingMessage.from_str(msg)
-
-                if key in [
-                    DataKeyEnum.ERROR_FRAME_START,
-                    DataKeyEnum.ERROR_MESSAGE,
-                    DataKeyEnum.ERROR_FRAME_END,
-                ]:
-                    if key == DataKeyEnum.ERROR_FRAME_START:
-                        self._error_cache.begin_frame()
-                    if key == DataKeyEnum.ERROR_MESSAGE:
-                        self._error_cache.add(value)
-                    if key == DataKeyEnum.ERROR_FRAME_END:
-                        self._error_cache.end_frame()
-                        self._data[
-                            DataKeyEnum.ERROR_MESSAGE.value
-                        ] = self._error_cache.data
-                else:
-                    self._data[key] = value
-                    if message_type == MessageTypeEnum.ACK_OK:
-                        self._call_handlers()
-            except ParseError:
-                pass
-
-    async def connect(self):
-        """Connect to system and wait for connection"""
-
-        async def check_connection():
-            while self._socket.state != State.RUNNING:
-                await asyncio.sleep(0.2)
-
-        try:
-            self._socket.start()
-            await asyncio.gather(check_connection())
-        except asyncio.CancelledError:
-            _LOGGER.debug("Connect was cancelled")
-            self.disconnect()
-            raise
-
     def disconnect(self):
         """Disconnect from system"""
-        self._socket.stop()
-        self._data_handler_task.cancel()
-        self._message_handler_task.cancel()
+        try:
+            pass
+        finally:
+            if self._websocket:
+                self._websocket.close()
+            for task in self._tasks:
+                task.cancel()
+
+    def _incoming_message_handler(self, msg):
+        try:
+            # update state
+            # if ack force push state to handler
+            (key, value, message_type) = IncomingMessage.from_str(msg)
+
+            if key in [
+                DataKeyEnum.ERROR_FRAME_START,
+                DataKeyEnum.ERROR_MESSAGE,
+                DataKeyEnum.ERROR_FRAME_END,
+            ]:
+                if key == DataKeyEnum.ERROR_FRAME_START:
+                    self._error_cache.begin_frame()
+                if key == DataKeyEnum.ERROR_MESSAGE:
+                    self._error_cache.add(value)
+                if key == DataKeyEnum.ERROR_FRAME_END:
+                    self._error_cache.end_frame()
+                    self._data[DataKeyEnum.ERROR_MESSAGE.value] = self._error_cache.data
+            else:
+                self._data[key] = value
+                if message_type == MessageTypeEnum.ACK_OK:
+                    self._call_handlers()
+        except ParseError:
+            pass
 
     def add_handler(self, handler: Callable[[str], None]):
         """Add event handler"""
@@ -139,5 +117,12 @@ class Client:
             """Should probably ack command here, just sleep for now"""
             await asyncio.sleep(0.5)
 
-        await self._socket.send_message(str(message))
+        await self._websocket.send(str(message))
         await asyncio.gather(ack_command())
+
+    async def __aenter__(self, *args, **kwargs):
+        self.connect()
+        return self
+
+    async def __aexit__(self, *args, **kwargs):
+        self.disconnect()

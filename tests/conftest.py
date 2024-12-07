@@ -5,9 +5,8 @@ import asyncio
 
 import pytest
 import pytest_asyncio
-from aiohttp import web
 
-from .utils.test_server import WebsocketView
+from .utils.test_server import TestServer
 
 
 @pytest.fixture(scope="session")
@@ -20,8 +19,8 @@ def event_loop():
 
 
 @pytest_asyncio.fixture()
-async def ws_server(aiohttp_server: "web.Server"):
+async def ws_server():
     """Websocket test server"""
-    app = web.Application()
-    app.add_routes([web.view("/", WebsocketView)])
-    return await aiohttp_server(app, port=3001)
+    async with TestServer("localhost", "3001") as server:
+        yield server
+        server.stop()

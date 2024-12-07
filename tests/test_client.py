@@ -1,33 +1,44 @@
 """Client tests"""
 import asyncio
+import logging
 import typing
 
-import aiohttp
 import pytest
 import pytest_asyncio
 
-from pysaleryd.client import Client, State
+from pysaleryd.client import Client, ConnectionStateEnum
 
 if typing.TYPE_CHECKING:
-    from aiohttp import web_server
+    from utils.test_server import TestServer
 
 __author__ = "Björn Dalfors"
 __copyright__ = "Björn Dalfors"
 __license__ = "MIT"
 
 
+async def has_state(client: Client, state: ConnectionStateEnum):
+    try:
+        while client.state != state:
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        pass
+    finally:
+        assert client.state == state
+
+
 @pytest_asyncio.fixture(name="hrv_client")
-async def _hrv_client(ws_server):
+async def _hrv_client(ws_server: "TestServer"):
     """HRV Client"""
-    async with aiohttp.ClientSession() as session:
-        async with Client("localhost", 3001, session, 3) as client:
-            yield client
+    async with Client("localhost", 3001, 3) as client:
+        yield client
+        client.disconnect()
 
 
 @pytest.mark.asyncio
 async def test_client_connect(hrv_client: "Client"):
     """test connect"""
-    assert hrv_client.state == State.RUNNING
+    hrv_client.connect()
+    await has_state(hrv_client, ConnectionStateEnum.RUNNING)
 
 
 @pytest.mark.asyncio
@@ -52,26 +63,40 @@ async def test_handler(hrv_client: "Client", mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_data(hrv_client: "Client"):
+async def test_get_data(hrv_client: "Client", caplog):
     """Test get data"""
+    caplog.set_level(logging.DEBUG)
     await asyncio.sleep(5)
     assert isinstance(hrv_client.data, dict)
     assert any(hrv_client.data.keys())
 
 
 @pytest.mark.asyncio
-async def test_reconnect(hrv_client: "Client", ws_server: "web_server.Server"):
+async def test_reconnect(hrv_client: "Client", ws_server: "TestServer", caplog):
     """Test reconnect"""
+    caplog.set_level(logging.DEBUG)
 
-    async def has_state(state):
-        while hrv_client.state != state:
-            await asyncio.sleep(0.1)
-        return True
+    await asyncio.wait_for(has_state(hrv_client, ConnectionStateEnum.RUNNING), 15)
+    ws_server.stop()
+    await asyncio.wait_for(has_state(hrv_client, ConnectionStateEnum.RETRYING), 15)
+    await ws_server.start()
+    await asyncio.wait_for(has_state(hrv_client, ConnectionStateEnum.RUNNING), 15)
 
-    assert await asyncio.wait_for(has_state(State.RUNNING), 15)
-    await ws_server.app.shutdown()
-    await ws_server.app.startup()
-    assert await asyncio.wait_for(has_state(State.RUNNING), 15)
+
+@pytest.mark.asyncio
+async def test_connect_unresponsive(ws_server: "TestServer", caplog):
+    """Test connection is retried when host is unresponsive"""
+    caplog.set_level(logging.INFO)
+
+    ws_server.stop()
+    await asyncio.sleep(5)
+    client = Client("localhost", 3001, 3, 1)
+    client.connect()
+    await asyncio.sleep(5)
+    await asyncio.wait_for(has_state(client, ConnectionStateEnum.NONE), 15)
+    await ws_server.start()
+    await asyncio.wait_for(has_state(client, ConnectionStateEnum.RUNNING), 15)
+    client.disconnect()
 
 
 @pytest.mark.asyncio
@@ -81,10 +106,8 @@ async def test_send_command(hrv_client: "Client"):
 
 
 @pytest.mark.asyncio
-async def test_disconnect(hrv_client: "Client"):
-    """Test send command"""
+async def test_disconnect(hrv_client: "Client", caplog):
+    caplog.set_level(logging.INFO)
+    """Test disconnected client remains disconnected"""
     hrv_client.disconnect()
-    await asyncio.sleep(2)
-    assert hrv_client.state == State.STOPPED
-    await asyncio.sleep(2)
-    assert hrv_client._socket._ws.closed  # pylint: disable=all
+    await has_state(hrv_client, ConnectionStateEnum.STOPPED)

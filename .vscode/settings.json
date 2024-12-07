@@ -12,7 +12,7 @@
         "--no-cov",
         "-o",
         "log_cli=1",
-        "--timeout=30",
+        "--timeout=300",
         "--verbose",
         "--import-mode=prepend",
     ],
