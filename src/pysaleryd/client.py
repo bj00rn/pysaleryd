@@ -4,10 +4,12 @@ import asyncio
 import logging
 from typing import Callable
 
+from websockets.protocol import State
+
 from .const import DataKey, MessageType
 from .data import IncomingMessage, OutgoingMessage, ParseError
 from .helpers.error_cache import ErrorCache
-from .helpers.websocket import ConnectionState, ReconnectingWebsocketClient
+from .helpers.websocket import ReconnectingWebsocketClient
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -35,10 +37,17 @@ class Client:
         self._data: dict[DataKey, str] = {}
         self._error_cache = ErrorCache()
         self._on_message_handlers: set[Callable[[dict[DataKey, str]]]] = set()
+        self._on_state_change_handlers: set[Callable[[dict[DataKey, str]]]] = set()
         self._connect_timeout = connect_timeout
-        self._state = ConnectionState.NONE
         self._tasks = [asyncio.create_task(self._do_call_message_handlers())]
-        self._websocket: ReconnectingWebsocketClient = None
+        self._websocket = ReconnectingWebsocketClient(
+            host=self._ip,
+            port=self._port,
+            connect_timeout=self._connect_timeout,
+            on_message=self._on_message,
+            on_connect=self._send_start_message,
+            on_state_change=self._on_state_change,
+        )
 
     @property
     def state(self):
@@ -47,24 +56,19 @@ class Client:
 
     @property
     def data(self):
-        """Get data from system"""
-        return self._data
+        """Get data from system if connection is alive"""
+        if self.state == State.OPEN:
+            return self._data
+
+        return dict()
 
     def connect(self):
         """Connect to HRV and begin receiving"""
-
-        async def send_start_message():
-            # server won't begin sending until message is received
-            await self._websocket.send("#:\r")
-
-        self._websocket = ReconnectingWebsocketClient(
-            host=self._ip,
-            port=self._port,
-            connect_timeout=self._connect_timeout,
-            on_message=self._on_message,
-            on_connect=send_start_message,
-        )
         self._websocket.connect()
+
+    async def _send_start_message(self):
+        """Send start message to server to begin receiving data"""
+        await self._websocket.send("#:\r")
 
     async def _do_call_message_handlers(self):
         """Call message handlers with data at update_interval"""
@@ -76,9 +80,17 @@ class Client:
         """Call handlers with data"""
         for handler in self._on_message_handlers:
             try:
-                handler(self._data)
+                handler(self.data)
             except Exception:
-                _LOGGER.error("Failed to call handler", exc_info=1)
+                _LOGGER.error("Failed to call handler %s", handler, exc_info=1)
+
+    def _call_state_change_handlers(self, state):
+        """Call handlers with data"""
+        for handler in self._on_state_change_handlers:
+            try:
+                handler(state)
+            except Exception:
+                _LOGGER.error("Failed to call handler %s", handler, exc_info=1)
 
     def close(self):
         """Disconnect from system"""
@@ -89,6 +101,9 @@ class Client:
                 self._websocket.close()
             for task in self._tasks:
                 task.cancel()
+
+    async def _on_state_change(self, state):
+        self._call_state_change_handlers(state)
 
     async def _on_message(self, msg: str):
         """Update data"""
@@ -113,6 +128,22 @@ class Client:
                     self._call_message_handlers()
         except ParseError as e:
             _LOGGER.warning(e, exc_info=1)
+
+    def add_state_change_handler(self, handler: Callable[[str], None]):
+        """Add state change handler to be called when client state changes
+
+        :param handler: handler to be added
+        :type handler: Callable[[str], None]
+        """
+        self._on_state_change_handlers.add(handler)
+
+    def remove_state_change_handler(self, handler: Callable[[str], None]):
+        """Remove state change handler
+
+        :param handler: handler to be removed
+        :type handler: Callable[[str], None]
+        """
+        self._on_state_change_handlers.remove(handler)
 
     def add_message_handler(self, handler: Callable[[str], None]):
         """Add message handler

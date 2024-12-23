@@ -3,10 +3,10 @@ import asyncio
 import logging
 from typing import Coroutine
 
-from websockets.asyncio.client import ClientConnection, connect
-from websockets.exceptions import ConnectionClosed, InvalidHandshake
+from websockets.asyncio.client import ClientConnection, connect, process_exception
+from websockets.exceptions import ConnectionClosed
+from websockets.protocol import State
 
-from ..const import ConnectionState
 from .task import TaskList, task_manager
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class ReconnectingWebsocketClient:
         host: str,
         port: int,
         on_message: Coroutine[None, str, None],
-        on_state_change: Coroutine[None, ConnectionState, None] = None,
+        on_state_change: Coroutine[None, State, None] = None,
         on_connect: Coroutine[None, None, None] = None,
         connect_timeout=15,
     ):
@@ -32,18 +32,18 @@ class ReconnectingWebsocketClient:
         self._on_message = on_message
         self._on_state_change = on_state_change
         self._on_connect = on_connect
-        self._state = ConnectionState.NONE
         self._tasks = TaskList()
+        self._ws = None
 
     @property
     def state(self):
         """State of connection"""
-        return self._state
+        if self._ws:
+            return self._ws.protocol.state
 
-    async def _set_state(self, new_state):
-        self._state = new_state
+    async def _do_on_state_change(self):
         if callable(self._on_state_change):
-            await self._on_state_change(new_state, self._state)
+            await self._on_state_change(self.state)
 
     async def _do_on_message(self, message: str):
         if callable(self._on_message):
@@ -110,34 +110,47 @@ class ReconnectingWebsocketClient:
                 _LOGGER.info("Connecting to %s", uri)
                 async for websocket in connect(uri, open_timeout=self._connect_timeout):
                     try:
+                        self._ws = websocket
                         _LOGGER.info("Connection established to %s", uri)
-                        await self._set_state(ConnectionState.RUNNING)
                         await self._do_on_connect()
+                        await self._do_on_state_change()
                         await websocket_handler(
                             websocket
                         )  # this will return if connection is closed OK by remote
-                        _LOGGER.warning("Connection to %s was closed, will retry", uri)
-                        await self._set_state(ConnectionState.RETRYING)
-                    except ConnectionClosed:
                         _LOGGER.warning(
-                            "Connection to %s was closed unexpectedly, will retry", uri
+                            "Connection to %s was closed, will reconnect", uri
                         )
-                        # reconnect if connection fails
-                        await self._set_state(ConnectionState.RETRYING)
-                        continue
+                        await self._do_on_state_change()
+                    except Exception as e:  # pylint: disable=W0718
+                        try:
+                            await self._do_on_state_change()
+                            processed_exception = process_exception(e)
+                            if not process_exception:
+                                # transient error
+                                _LOGGER.error(
+                                    "Failed to connect to %s, will retry",
+                                    uri,
+                                    exc_info=1,
+                                )
+                                continue
+                            else:
+                                raise processed_exception  # pylint: disable=W0707
+                        except ConnectionClosed:
+                            _LOGGER.warning(
+                                "Connection to %s was closed unexpectedly, will retry",
+                                uri,
+                            )
+                            # reconnect if connection closed
+                            continue
 
-            except (OSError, TimeoutError, InvalidHandshake):
-                _LOGGER.error("Failed to connect to %s, will retry", uri, exc_info=1)
-                await self._set_state(ConnectionState.RETRYING)
-                continue
             except asyncio.CancelledError:
                 _LOGGER.info("Shutting down connection to %s", uri)
-                await self._set_state(ConnectionState.STOPPED)
+                await self._do_on_state_change()
                 raise
 
     def connect(self):
         """Connect to server"""
-        if self._state in [ConnectionState.NONE, ConnectionState.STOPPED]:
+        if self._ws is None:
             runner_task = asyncio.create_task(self.runner(), name="runner")
             message_runner_task = asyncio.create_task(self._on_message_runner())
             self._tasks.append(runner_task, message_runner_task)
@@ -145,6 +158,7 @@ class ReconnectingWebsocketClient:
     def close(self):
         """Close connection and perform clean up"""
         self._tasks.cancel()
+        self._ws = None
 
     def __enter__(self):
         """Initiate connection"""
