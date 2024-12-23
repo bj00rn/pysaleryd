@@ -8,7 +8,6 @@ import pytest_asyncio
 from websockets.protocol import State
 
 from pysaleryd.client import Client
-from pysaleryd.const import ConnectionState
 
 if typing.TYPE_CHECKING:
     from utils.test_server import TestServer
@@ -18,7 +17,7 @@ __copyright__ = "Björn Dalfors"
 __license__ = "MIT"
 
 
-async def has_state(client: Client, state: ConnectionState):
+async def has_state(client: Client, state: State):
     try:
         while client.state != state:
             await asyncio.sleep(1)

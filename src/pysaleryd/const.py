@@ -1,13 +1,6 @@
+"""Constants"""
+
 from enum import IntEnum, StrEnum
-
-
-class ConnectionState(StrEnum):
-    """State of connection."""
-
-    NONE = ""
-    RETRYING = "retrying"
-    RUNNING = "running"
-    STOPPED = "stopped"
 
 
 class MessageType(IntEnum):
