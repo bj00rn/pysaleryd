@@ -29,70 +29,29 @@ Supported devices
 
 LOKE1/Loke Basic/LS-01 using control system 4.1.5
 
-Usage with asyncio as library
+Example usage
 =============================
-
-
-Read data
----------
-
 .. code-block:: python3
 
     import asyncio
-    import aiohttp
 
     from pysaleryd.client import Client
-
-    async def work():
-        async with aiohttp.ClientSession() as session:
-            async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
-                await asyncio.sleep(2) # wait a bit for some data
-                print(client.data)
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(work())
-
-Read data using callback
-------------------------
-
-.. code-block:: python3
-
-    import asyncio
-    import aiohttp
-
-    from pysaleryd.client import Client
+    from pysaleryd.const import DataKey
 
     def handle_message(data: dict):
+        # must be safe to call from event loop
+        print("message handler")
         print(data)
 
-    async def work():
-        update_interval = 10 # call handle_message every 30 seconds
-        async with aiohttp.ClientSession() as session:
-            async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session, update_interval) as hrv_client:
-                hrv_client.add_handler(handle_message)
-                await asyncio.sleep(update_interval +1 ) # wait around a bit for data
+    async def main():
+        update_interval = 10
+        with Client("192.168.1.151", update_interval=update_interval) as hrv_client:
+            hrv_client.add_message_handler(handle_message)
+            await asyncio.sleep(update_interval +1 ) # wait around a bit for data
+            await hrv_client.send_command(DataKey.FIREPLACE_MODE, 1) # turn on fireplace mode
 
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(work())
-
-Send control command
---------------------
-Command syntax can be found by dissecting websocket messages in the built in web ui
-
-.. code-block:: python3
-
-    import asyncio
-    import aiohttp
-
-    from pysaleryd.client import Client
-
-    async def work():
-        async with aiohttp.ClientSession() as session:
-            async with Client(WEBSOCKET_URL, WEBSOCKET_PORT, session) as hrv_client:
-                await hrv_client.send_command("MF", 1)
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(work())
+    loop.run_until_complete(main())
 
 Troubleshooting
 ===============

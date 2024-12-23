@@ -5,11 +5,12 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .const import MessageType, PayloadSeparator
+
 if TYPE_CHECKING:
     from typing import Optional, Union
-    from .const import DataKeyEnum
 
-from .const import MessageTypeEnum, PayloadSeparatorEnum
+    from .const import DataKey
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -22,7 +23,7 @@ class ParseError(BaseException):
 class OutgoingMessage:
     """Outgoing message to system"""
 
-    key: DataKeyEnum
+    key: DataKey
     value: str
 
     def __str__(self):
@@ -33,7 +34,7 @@ class IncomingMessage:
     """Incoming message from system"""
 
     @staticmethod
-    def from_str(msg: str) -> tuple[DataKeyEnum, str, MessageTypeEnum]:
+    def from_str(msg: str) -> tuple[DataKey, str, MessageType]:
         """Parse message string
 
         Args:
@@ -45,25 +46,25 @@ class IncomingMessage:
         Returns:
             (key, value, message_type): parsed message key and value
         """
-        if msg[0] != PayloadSeparatorEnum.MESSAGE_START:
+        if msg[0] != PayloadSeparator.MESSAGE_START:
             raise ParseError(f"Unsupported payload, {msg}")
         else:
             msg = msg[1::]
         try:
             [key, payload] = [
-                v.strip() for v in msg.split(PayloadSeparatorEnum.PAYLOAD_START)
+                v.strip() for v in msg.split(PayloadSeparator.PAYLOAD_START, 1)
             ]
 
-            if key[0] in [PayloadSeparatorEnum.ACK_ERROR, PayloadSeparatorEnum.ACK_OK]:
+            if key[0] in [PayloadSeparator.ACK_ERROR, PayloadSeparator.ACK_OK]:
                 return (
                     key[1::],
                     payload,
-                    MessageTypeEnum.ACK_OK.value
-                    if key[0] == PayloadSeparatorEnum.ACK_OK
-                    else MessageTypeEnum.ACK_ERROR.value,
+                    MessageType.ACK_OK.value
+                    if key[0] == PayloadSeparator.ACK_OK
+                    else MessageType.ACK_ERROR.value,
                 )
             else:
-                return (key, payload, MessageTypeEnum.MESSAGE.value)
+                return (key, payload, MessageType.MESSAGE.value)
         except Exception as exc:
             raise ParseError(f"Failed to parse message {msg}") from exc
 
@@ -77,7 +78,7 @@ class SystemProperty(BaseSystemProperty):
 
     def __init__(
         self,
-        key: DataKeyEnum,
+        key: DataKey,
         value: Optional[int | str] = None,
         min_value: Optional[int | str] = None,
         max_value: Optional[int | str] = None,
@@ -89,7 +90,7 @@ class SystemProperty(BaseSystemProperty):
         self.max_value = max_value
 
     @classmethod
-    def from_str(cls, key: DataKeyEnum, raw_value: str):
+    def from_str(cls, key: DataKey, raw_value: str):
         """Create instance from from string"""
 
         def maybe_cast(x: str) -> Union[int, float, str, None]:
@@ -114,6 +115,6 @@ class SystemProperty(BaseSystemProperty):
 class ErrorSystemProperty(BaseSystemProperty):
     """HRV System error property"""
 
-    def __init__(self, key: DataKeyEnum, value: Optional[list[str]] = None):
+    def __init__(self, key: DataKey, value: Optional[list[str]] = None):
         self.key = key
         self.value = value

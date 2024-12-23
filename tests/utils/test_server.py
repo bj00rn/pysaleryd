@@ -1,103 +1,63 @@
-"""Websocket server for testing"""
+#!/usr/bin/env python
 
 import asyncio
 import logging
 
-import aiohttp
-from aiohttp import web
-from aiohttp.web import WebSocketResponse
-from aiohttp.web_request import Request
+from websockets.asyncio.server import ServerConnection, serve
+from websockets.exceptions import ConnectionClosed
+
+from pysaleryd.helpers.task import task_manager
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class WebsocketView(web.View):
-    def __init__(self, request: Request) -> None:
-        self.receive = asyncio.queues.Queue()
-        self.send = asyncio.queues.Queue()
-        self._message_handler = None
-        self._outgoing_message_handler = None
-        self.stream_handler = None
-        self._listener = None
-        self._pinger = None
-        super().__init__(request)
-
-    @classmethod
-    async def cleanup(cls, ws):
-        """Close websocket connection"""
-        await ws.close(code=aiohttp.WSCloseCode.GOING_AWAY, message="Server shutdown")
-
-    async def pinger(self):
-        """Send ping to peer"""
-        while True:
-            await asyncio.sleep(30)
-            await self.send.put("PING")
-
-    async def data_generator(self):
-        """Generate data and push to queue"""
-        while True:
-            await self.send.put("#MF: 1+ 1+ 1+1")
+async def data_generator(ws: ServerConnection):
+    """Generate data and push to queue"""
+    while True:
+        try:
+            await ws.send("#MF: 1+ 1+ 1+1")
             await asyncio.sleep(0.5)
+        except ConnectionClosed:
+            break
 
-    async def outgoing_message_handler(self, ws: WebSocketResponse):
-        """Send outgoing messages to peer"""
-        while True:
-            msg = await self.send.get()
-            await ws.send_str(msg)
 
-    async def incoming_message_handler(self):
-        """Handle incoming messages"""
-        try:
-            while True:
-                msg = await self.receive.get()  # noqa: F841
-                if not self.stream_handler:
-                    self.stream_handler = asyncio.create_task(self.data_generator())
-        except asyncio.CancelledError:
-            if self.stream_handler:
-                self.stream_handler.cancel()
-            self.receive.task_done()
-            raise
+class TestServer:
+    """Test server"""
 
-    async def listener(self, ws: WebSocketResponse):
-        """Push incoming messages to queue"""
-        try:
-            while True:
-                async for msg in ws:
-                    if msg.type == aiohttp.WSMsgType.TEXT:
-                        await self.receive.put(msg)
-        finally:
-            task = asyncio.create_task(self.cleanup(ws), name="Cleanup")
-            await asyncio.shield(task)
-
-    async def websocket_handler(self, request):
-        """Websocket handler"""
-        try:
-            ws = aiohttp.web.WebSocketResponse()
-            await ws.prepare(request)
-            self._message_handler = asyncio.create_task(self.incoming_message_handler())
-            self._outgoing_message_handler = asyncio.create_task(
-                self.outgoing_message_handler(ws)
+    async def _handler(self, websocket: ServerConnection):
+        """Websocket handler to emulate HRV"""
+        with task_manager(cancel_on_exit=True) as task_list:
+            message = await websocket.recv()
+            _LOGGER.debug("Received %s", message)
+            task = self._loop.create_task(
+                data_generator(websocket), name="data_generator"
             )
-            self._pinger = asyncio.create_task(self.pinger())
-            self._listener = asyncio.create_task(self.listener(ws), name="Serve")
-            await self._listener
-            return ws
-        finally:
-            self._outgoing_message_handler.cancel()
-            self._message_handler.cancel()
-            self._pinger.cancel()
+            task_list.append(task)
+            await task_list.wait(return_when=asyncio.ALL_COMPLETED)
 
-    async def get(self):
-        """GET
-        Serve websocket
-        """
-        return await self.websocket_handler(self.request)
+    def __init__(self, host, port, loop=None):
+        self.port = port
+        self.host = host
+        self._stop = None
+        self._server: asyncio.Server = None
+        self._gen = None
+        self._loop = loop if loop is not None else asyncio.get_running_loop()
 
+    async def close(self):
+        """Stop server"""
+        if self._server:
+            self._server.close()
+            await self._server.wait_closed()
 
-def run_server(argv):  # pylint: disable W0613
-    """Init function when running from cli
-    See https://docs.aiohttp.org/en/stable/web_quickstart.html#command-line-interface-cli # noqa: E501
-    """
-    app = web.Application()
-    app.router.add_view("/", WebsocketView)
-    return app
+    async def start(self):
+        """Start server"""
+        self._server = await serve(
+            self._handler, self.host, self.port, start_serving=True
+        )
+
+    async def __aenter__(self, *args, **kwargs):
+        await self.start()
+        return self
+
+    async def __aexit__(self, *args, **kwargs):
+        await self.close()

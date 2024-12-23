@@ -2,8 +2,8 @@ import logging
 
 import pytest
 
-from pysaleryd.const import DataKeyEnum, MessageTypeEnum
-from pysaleryd.utils import IncomingMessage, ParseError, SystemProperty
+from pysaleryd.const import DataKey, MessageType
+from pysaleryd.data import IncomingMessage, ParseError, SystemProperty
 
 __author__ = "Björn Dalfors"
 __copyright__ = "Björn Dalfors"
@@ -16,23 +16,23 @@ _LOGGER = logging.getLogger(__name__)
 def test_parse_int_from_list_str():
     """Test parsing int list"""
     (key, value, message_type) = IncomingMessage.from_str("#MF: 1+ 0+ 2+30\r")
-    assert key == DataKeyEnum.MODE_FAN
+    assert key == DataKey.MODE_FAN
     assert isinstance(value, str)
-    assert message_type == MessageTypeEnum.MESSAGE
+    assert message_type == MessageType.MESSAGE
 
 
 def test_parse_ack():
     (key, value, message_type) = IncomingMessage.from_str("#$MF:  1+  0+  2+0\r")
     assert key == "MF"
     assert isinstance(value, str)
-    assert message_type == MessageTypeEnum.ACK_OK
+    assert message_type == MessageType.ACK_OK
 
 
 def test_parse_ack_error():
     (key, value, message_type) = IncomingMessage.from_str("#!MF:\r")
     assert key == "MF"
     assert isinstance(value, str)
-    assert message_type == MessageTypeEnum.ACK_ERROR
+    assert message_type == MessageType.ACK_ERROR
 
 
 def test_parse_int_from_str():
@@ -41,7 +41,7 @@ def test_parse_int_from_str():
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "0"
-    assert message_type == MessageTypeEnum.MESSAGE
+    assert message_type == MessageType.MESSAGE
 
 
 def test_parse_str_from_str():
@@ -50,13 +50,13 @@ def test_parse_str_from_str():
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "xxx"
-    assert message_type == MessageTypeEnum.MESSAGE
+    assert message_type == MessageType.MESSAGE
 
     (key, value, message_type) = IncomingMessage.from_str("#*XX:    1.x.1\r")
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "1.x.1"
-    assert message_type == MessageTypeEnum.MESSAGE
+    assert message_type == MessageType.MESSAGE
 
 
 def test_parse_error():
@@ -67,10 +67,10 @@ def test_parse_error():
 
 def test_parse_system_property():
     """Test parse SystemProperty"""
-    key = DataKeyEnum.INSTALLER_PASSWORD
+    key = DataKey.INSTALLER_PASSWORD
     value_str = "1"
     parsed = SystemProperty.from_str(key, value_str)
-    assert parsed.key == DataKeyEnum.INSTALLER_PASSWORD
+    assert parsed.key == DataKey.INSTALLER_PASSWORD
     assert parsed.value == 1
 
     value_str = "1+ 2+ 3+0"
