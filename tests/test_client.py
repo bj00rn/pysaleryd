@@ -54,8 +54,8 @@ async def test_handler(hrv_client: "Client", mocker, caplog):
     def broken_handler(data):
         raise Exception()  # pylint: disable=W0719
 
-    hrv_client.add_message_handler(broken_handler)
-    hrv_client.add_message_handler(handler)
+    hrv_client.add_data_handler(broken_handler)
+    hrv_client.add_data_handler(handler)
     await asyncio.sleep(5)
 
     assert isinstance(data, dict)

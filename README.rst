@@ -27,7 +27,20 @@ Maintains a reconnecting websocket to the system.
 Supported devices
 ==================
 
-LOKE1/Loke Basic/LS-01 using control system 4.1.5
+.. list-table::
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Model
+     - Supported control system versions
+     - Unsupported control system versions
+   * - LOKE LS-01/LT-01
+     - 4.1.5
+     - <4.1.5
+   * - LOKE LS-02/LT-02
+     - unknown support
+     - unknown support
+
 
 Example usage
 =============================
@@ -40,13 +53,17 @@ Example usage
 
     def handle_message(data: dict):
         # must be safe to call from event loop
-        print("message handler")
-        print(data)
+        print("got data: ", data)
+
+    def handle_state_change(state):
+       # must be safe to call from event loop
+       print("new state: ", state)
 
     async def main():
         update_interval = 10
-        with Client("192.168.1.151", update_interval=update_interval) as hrv_client:
+        with Client(HOST, update_interval=update_interval) as hrv_client:
             hrv_client.add_message_handler(handle_message)
+            hrv_client.add_state_change_handler(handle_state_change)
             await asyncio.sleep(update_interval +1 ) # wait around a bit for data
             await hrv_client.send_command(DataKey.FIREPLACE_MODE, 1) # turn on fireplace mode
 

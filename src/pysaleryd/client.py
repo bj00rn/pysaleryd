@@ -36,10 +36,10 @@ class Client:
         self._port = port
         self._data: dict[DataKey, str] = {}
         self._error_cache = ErrorCache()
-        self._on_message_handlers: set[Callable[[dict[DataKey, str]]]] = set()
-        self._on_state_change_handlers: set[Callable[[dict[DataKey, str]]]] = set()
+        self._on_data_handlers: set[Callable[[dict[DataKey, str]]]] = set()
+        self._on_state_change_handlers: set[Callable[[State]]] = set()
         self._connect_timeout = connect_timeout
-        self._tasks = [asyncio.create_task(self._do_call_message_handlers())]
+        self._tasks = [asyncio.create_task(self._do_call_data_handlers())]
         self._websocket = ReconnectingWebsocketClient(
             host=self._ip,
             port=self._port,
@@ -70,15 +70,15 @@ class Client:
         """Send start message to server to begin receiving data"""
         await self._websocket.send("#:\r")
 
-    async def _do_call_message_handlers(self):
+    async def _do_call_data_handlers(self):
         """Call message handlers with data at update_interval"""
         while True:
             await asyncio.sleep(self._update_interval)
-            self._call_message_handlers()
+            self._call_data_handlers()
 
-    def _call_message_handlers(self):
+    def _call_data_handlers(self):
         """Call handlers with data"""
-        for handler in self._on_message_handlers:
+        for handler in self._on_data_handlers:
             try:
                 handler(self.data)
             except Exception:
@@ -125,11 +125,11 @@ class Client:
             else:
                 self._data[key] = value
                 if message_type == MessageType.ACK_OK:
-                    self._call_message_handlers()
+                    self._call_data_handlers()
         except ParseError as e:
             _LOGGER.warning(e, exc_info=1)
 
-    def add_state_change_handler(self, handler: Callable[[str], None]):
+    def add_state_change_handler(self, handler: Callable[[State], None]):
         """Add state change handler to be called when client state changes
 
         :param handler: handler to be added
@@ -137,7 +137,7 @@ class Client:
         """
         self._on_state_change_handlers.add(handler)
 
-    def remove_state_change_handler(self, handler: Callable[[str], None]):
+    def remove_state_change_handler(self, handler: Callable[[State], None]):
         """Remove state change handler
 
         :param handler: handler to be removed
@@ -145,23 +145,22 @@ class Client:
         """
         self._on_state_change_handlers.remove(handler)
 
-    def add_message_handler(self, handler: Callable[[str], None]):
-        """Add message handler
-
-        Message handler will be called at update interval
+    def add_data_handler(self, handler: Callable[[dict[DataKey, str]], None]):
+        """Add data handler to be called at update interval
 
         :param handler: handler function. Must be safe to call from event loop
-        :type handler: Callable[[str], None]
+        :type handler: Callable[[dict[DataKey, str]], None]
         """
-        self._on_message_handlers.add(handler)
 
-    def remove_message_handler(self, handler: Callable[[str], None]):
-        """Remove message handler
+        self._on_data_handlers.add(handler)
+
+    def remove_data_handler(self, handler: Callable[[dict[DataKey, str]], None]):
+        """Remove data handler
 
         :param handler: handler to remove
-        :type handler: Callable[[str], None]
+        :type handler: Callable[[dict[DataKey, str]], None]
         """
-        self._on_message_handlers.remove(handler)
+        self._on_data_handlers.remove(handler)
 
     async def send_command(self, key: MessageType, payload: str | int):
         """Send command to HRV unit
