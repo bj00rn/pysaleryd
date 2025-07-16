@@ -1,0 +1,44 @@
+{
+    "name": "pysaleryd-dev",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "features": {},
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "esbonio.sphinx.confDir": "",
+                "python.testing.pytestEnabled": true,
+                "python.testing.pytestArgs": [
+                    // Coverage is not supported by vscode:
+                    // https://github.com/Microsoft/vscode-python/issues/693
+                    // Note that this will make pytest fail if pytest-cov is not installed,
+                    // if that's the case, then this option needs to be be removed (overrides
+                    // can be set at a workspace level, it's up to you to decide what's the
+                    // best approach). You might also prefer to only set this option
+                    // per-workspace (wherever coverage is used).
+                    "--no-cov",
+                    "-o",
+                    "log_cli=1",
+                    "--timeout=300",
+                    "--verbose",
+                    "--import-mode=prepend"
+                ],
+                "autoDocstring.docstringFormat": "sphinx"
+                ,
+                "editor.formatOnSave": true
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.mypy-type-checker",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-docker",
+                "ms-python.black-formatter",
+                "ms-python.debugpy"
+            ]
+        }
+    },
+    "postCreateCommand": "./.devcontainer/scripts/setup.sh",
+    "forwardPorts": [
+        3001
+    ],
+    "remoteUser": "vscode"
+}
