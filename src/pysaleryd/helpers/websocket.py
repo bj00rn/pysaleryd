@@ -1,7 +1,7 @@
 """Reconnecting websocket client"""
 import asyncio
 import logging
-from typing import Coroutine
+from typing import Callable, Coroutine
 
 from websockets.asyncio.client import ClientConnection, connect, process_exception
 from websockets.exceptions import ConnectionClosed
@@ -19,9 +19,9 @@ class ReconnectingWebsocketClient:
         self,
         host: str,
         port: int,
-        on_message: Coroutine[None, str, None],
-        on_state_change: Coroutine[None, State, None] = None,
-        on_connect: Coroutine[None, None, None] = None,
+        on_message: Callable[[str], Coroutine[None, str, None]],
+        on_state_change: Callable[[str], Coroutine[None, State, None]] | None = None,
+        on_connect: Callable[[], Coroutine[None, None, None]] | None = None,
         connect_timeout=15,
     ):
         self._host = host
@@ -125,7 +125,7 @@ class ReconnectingWebsocketClient:
                         try:
                             await self._do_on_state_change()
                             processed_exception = process_exception(e)
-                            if not process_exception:
+                            if process_exception is None:
                                 # transient error
                                 _LOGGER.error(
                                     "Failed to connect to %s, will retry",

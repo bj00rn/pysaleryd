@@ -36,8 +36,8 @@ class Client:
         self._port = port
         self._data: dict[DataKey, str] = {}
         self._error_cache = ErrorCache()
-        self._on_data_handlers: set[Callable[[dict[DataKey, str]]]] = set()
-        self._on_state_change_handlers: set[Callable[[State]]] = set()
+        self._on_data_handlers: set[Callable[[dict[DataKey, str]], None]] = set()
+        self._on_state_change_handlers: set[Callable[[State], None]] = set()
         self._connect_timeout = connect_timeout
         self._tasks = [asyncio.create_task(self._do_call_data_handlers())]
         self._websocket = ReconnectingWebsocketClient(
@@ -66,7 +66,7 @@ class Client:
         """Connect to HRV and begin receiving"""
         self._websocket.connect()
 
-    async def _send_start_message(self):
+    async def _send_start_message(self) -> None:
         """Send start message to server to begin receiving data"""
         await self._websocket.send("#:\r")
 
@@ -105,7 +105,7 @@ class Client:
     async def _on_state_change(self, state):
         self._call_state_change_handlers(state)
 
-    async def _on_message(self, msg: str):
+    async def _on_message(self, msg: str) -> None:
         """Update data"""
         try:
             (key, value, message_type) = IncomingMessage.from_str(msg)
@@ -121,13 +121,13 @@ class Client:
                     self._error_cache.add(value)
                 if key == DataKey.ERROR_FRAME_END:
                     self._error_cache.end_frame()
-                    self._data[DataKey.ERROR_MESSAGE.value] = self._error_cache.data
+                    self._data[DataKey.ERROR_MESSAGE] = self._error_cache.data
             else:
                 self._data[key] = value
                 if message_type == MessageType.ACK_OK:
                     self._call_data_handlers()
         except ParseError as e:
-            _LOGGER.warning(e, exc_info=1)
+            _LOGGER.warning(e, exc_info=True)
 
     def add_state_change_handler(self, handler: Callable[[State], None]):
         """Add state change handler to be called when client state changes
@@ -162,7 +162,7 @@ class Client:
         """
         self._on_data_handlers.remove(handler)
 
-    async def send_command(self, key: MessageType, payload: str | int):
+    async def send_command(self, key: DataKey, payload: str | int):
         """Send command to HRV unit
 
         :param key: message type key

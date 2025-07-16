@@ -3,14 +3,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
-from .const import MessageType, PayloadSeparator
-
-if TYPE_CHECKING:
-    from typing import Optional, Union
-
-    from .const import DataKey
+from .const import DataKey, MessageType, PayloadSeparator
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -24,10 +18,11 @@ class OutgoingMessage:
     """Outgoing message to system"""
 
     key: DataKey
-    value: str
+    value: str | int
 
     def __str__(self):
-        return f"#{self.key}:{self.value}\r"
+        ps = PayloadSeparator
+        return f"{ps.MESSAGE_START}{self.key}{ps.PAYLOAD_START}{self.value}{ps.MESSAGE_END}"  # noqa: E501
 
 
 class IncomingMessage:
@@ -57,14 +52,14 @@ class IncomingMessage:
 
             if key[0] in [PayloadSeparator.ACK_ERROR, PayloadSeparator.ACK_OK]:
                 return (
-                    key[1::],
+                    DataKey(key[1::]),
                     payload,
-                    MessageType.ACK_OK.value
+                    MessageType.ACK_OK
                     if key[0] == PayloadSeparator.ACK_OK
-                    else MessageType.ACK_ERROR.value,
+                    else MessageType.ACK_ERROR,
                 )
             else:
-                return (key, payload, MessageType.MESSAGE.value)
+                return (DataKey(key), payload, MessageType.MESSAGE)
         except Exception as exc:
             raise ParseError(f"Failed to parse message {msg}") from exc
 
@@ -79,22 +74,23 @@ class SystemProperty(BaseSystemProperty):
     def __init__(
         self,
         key: DataKey,
-        value: Optional[int | str] = None,
-        min_value: Optional[int | str] = None,
-        max_value: Optional[int | str] = None,
-        *_args,
+        value: int | str | float | None = None,
+        min_value: int | str | float | None = None,
+        max_value: int | str | float | None = None,
+        extra: int | str | float | None = None,
     ):
         self.key = key
         self.value = value
         self.min_value = min_value
         self.max_value = max_value
+        self.extra = extra
 
     @classmethod
     def from_str(cls, key: DataKey, raw_value: str):
         """Create instance from from string"""
 
-        def maybe_cast(x: str) -> Union[int, float, str, None]:
-            """Cast value if it is numeric"""
+        def maybe_cast(x: str) -> int | float | str | None:
+            """Cast value if it is a numeric like string"""
             if x is None:
                 return x
             if x.isdigit():
@@ -109,12 +105,23 @@ class SystemProperty(BaseSystemProperty):
             else []
         )
 
-        return cls(key, *positions)
+        value = positions[0] if len(positions) > 0 else None
+        min_value = positions[1] if len(positions) > 1 else None
+        max_value = positions[2] if len(positions) > 2 else None
+        extra = positions[3] if len(positions) > 3 else None
+        return cls(key, value, min_value, max_value, extra)
+
+    def to_str(self) -> str:
+        """Convert to string"""
+        ps = PayloadSeparator
+        if self.min_value is not None and self.max_value is not None:
+            return f"{ps.MESSAGE_START}{self.key}+{self.value}+{self.min_value}+{self.max_value}{ps.MESSAGE_END}"  # noqa: E501
+        return f"{ps.MESSAGE_START}{self.key}{ps.PAYLOAD_START}{str(self.value)}{ps.MESSAGE_END}"  # noqa: E501
 
 
 class ErrorSystemProperty(BaseSystemProperty):
     """HRV System error property"""
 
-    def __init__(self, key: DataKey, value: Optional[list[str]] = None):
+    def __init__(self, key: DataKey, value: list[str] | None = None):
         self.key = key
         self.value = value

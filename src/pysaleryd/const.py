@@ -19,12 +19,13 @@ class PayloadSeparator(StrEnum):
     ACK_ERROR = "!"
     MESSAGE_START = "#"
     PAYLOAD_START = ":"
+    MESSAGE_END = "\r"
 
 
 class DataKey(StrEnum):
     """Data key enumerator"""
 
-    # Scalar
+    # Scalars
     AIR_TEMPERATURE_AT_HEATER = "*TK"
     AIR_TEMPERATURE_SUPPLY = "*TC"
     CONTROL_SYSTEM_VERSION = "*SC"
@@ -47,7 +48,9 @@ class DataKey(StrEnum):
     INSTALLER_PHONE = "IC"
     INSTALLER_WEBSITE = "IE"
 
-    # Vecto x+ x+ x+x
+    # Vectors x+ x+ x+x
+    BOOST_MODE_MINUTES = "FH"
+    FIREPLACE_MODE_MINUTES = "MC"
     CONTROL_SYSTEM_STATE = "MP"
     MODE_HEATER_POWER_RATING = "MG"
     COOLING_MODE = "MK"
