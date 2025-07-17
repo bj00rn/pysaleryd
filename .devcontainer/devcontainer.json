@@ -22,8 +22,7 @@
                     "--verbose",
                     "--import-mode=prepend"
                 ],
-                "autoDocstring.docstringFormat": "sphinx"
-                ,
+                "autoDocstring.docstringFormat": "sphinx",
                 "editor.formatOnSave": true
             },
             "extensions": [
@@ -32,9 +31,16 @@
                 "ms-python.vscode-pylance",
                 "ms-azuretools.vscode-docker",
                 "ms-python.black-formatter",
-                "ms-python.debugpy"
+                "ms-python.debugpy",
+                "ms-python.isort"
             ]
         }
+    },
+    "remoteEnv": {
+        "PYTHONPATH": "/workspaces/pysaleryd/src"
+    },
+    "containerEnv": {
+        "PYTHONPATH": "/workspaces/pysaleryd/src"
     },
     "postCreateCommand": "./.devcontainer/scripts/setup.sh",
     "forwardPorts": [

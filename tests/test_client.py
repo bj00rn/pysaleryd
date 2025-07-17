@@ -1,23 +1,24 @@
 """Client tests"""
 import asyncio
 import logging
-import typing
+from typing import TYPE_CHECKING
 
 import pytest
 import pytest_asyncio
 from websockets.protocol import State
 
 from pysaleryd.client import Client
+from pysaleryd.data import DataKey
 
-if typing.TYPE_CHECKING:
-    from utils.test_server import TestServer
+if TYPE_CHECKING:
+    from tests.utils.test_server import TestServer
 
 __author__ = "Björn Dalfors"
 __copyright__ = "Björn Dalfors"
 __license__ = "MIT"
 
 
-async def has_state(client: Client, state: State):
+async def has_state(client: Client, state: State | None):
     try:
         while client.state != state:
             await asyncio.sleep(1)
@@ -124,7 +125,7 @@ async def test_connect_unresponsive(ws_server: "TestServer", caplog):
 @pytest.mark.asyncio
 async def test_send_command(hrv_client: "Client"):
     """Test send command"""
-    await hrv_client.send_command("MF", 0)
+    await hrv_client.send_command(DataKey.MODE_FAN, 0)
 
 
 @pytest.mark.asyncio

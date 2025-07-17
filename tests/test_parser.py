@@ -3,7 +3,13 @@ import logging
 import pytest
 
 from pysaleryd.const import DataKey, MessageType
-from pysaleryd.data import IncomingMessage, ParseError, SystemProperty
+from pysaleryd.data import (
+    IncomingMessage,
+    OutgoingMessage,
+    ParseError,
+    PayloadSeparator,
+    SystemProperty,
+)
 
 __author__ = "Björn Dalfors"
 __copyright__ = "Björn Dalfors"
@@ -22,8 +28,8 @@ def test_parse_int_from_list_str():
 
 
 def test_parse_ack():
-    (key, value, message_type) = IncomingMessage.from_str("#$MF:  1+  0+  2+0\r")
-    assert key == "MF"
+    key, value, message_type = IncomingMessage.from_str("#$MF:  1+  0+  2+0\r")
+    assert key == DataKey.MODE_FAN
     assert isinstance(value, str)
     assert message_type == MessageType.ACK_OK
 
@@ -37,8 +43,8 @@ def test_parse_ack_error():
 
 def test_parse_int_from_str():
     """Test parsing int"""
-    (key, value, message_type) = IncomingMessage.from_str("#*XX:0\r")
-    assert key == "*XX"
+    (key, value, message_type) = IncomingMessage.from_str("#*SC:0\r")
+    assert key == DataKey.CONTROL_SYSTEM_VERSION
     assert isinstance(value, str)
     assert value == "0"
     assert message_type == MessageType.MESSAGE
@@ -46,14 +52,17 @@ def test_parse_int_from_str():
 
 def test_parse_str_from_str():
     """Test parsing str"""
-    (key, value, message_type) = IncomingMessage.from_str("#*XX:xxx\r")
-    assert key == "*XX"
+    message = OutgoingMessage(DataKey.MODEL_NAME, "TestModel")
+    (key, value, message_type) = IncomingMessage.from_str(str(message))
+    assert key == DataKey.MODEL_NAME
     assert isinstance(value, str)
-    assert value == "xxx"
+    assert value == "TestModel"
     assert message_type == MessageType.MESSAGE
 
-    (key, value, message_type) = IncomingMessage.from_str("#*XX:    1.x.1\r")
-    assert key == "*XX"
+    (key, value, message_type) = IncomingMessage.from_str(
+        f"{PayloadSeparator.MESSAGE_START}{DataKey.CONTROL_SYSTEM_VERSION}{PayloadSeparator.PAYLOAD_START}    1.x.1{PayloadSeparator.MESSAGE_END}"  # noqa: E501
+    )
+    assert key == DataKey.CONTROL_SYSTEM_VERSION
     assert isinstance(value, str)
     assert value == "1.x.1"
     assert message_type == MessageType.MESSAGE
