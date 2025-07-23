@@ -2,7 +2,7 @@
 set -e
 
 # Mark workspace as a safe git directory
-git config --global --add safe.directory /workspace
+git config --global --add safe.directory .
 
 # Upgrade pip
 pip install --upgrade pip

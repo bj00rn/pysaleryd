@@ -1,9 +1,12 @@
 import asyncio
-from contextlib import contextmanager
+import logging
+from contextlib import asynccontextmanager
+
+_LOGGER = logging.getLogger(__name__)
 
 
-@contextmanager
-def task_manager(*args, cancel_on_exit=False, **kwargs):
+@asynccontextmanager
+async def task_manager(*args, cancel_on_exit=False, **kwargs):
     """Context manager for tasks
 
     :param cancel_on_exit: cancel tasks on exit context, defaults to False
@@ -22,10 +25,17 @@ def task_manager(*args, cancel_on_exit=False, **kwargs):
 class TaskList:
     """Helper class to keep references and work with Tasks"""
 
-    def __init__(self):
-        self.tasks: list[asyncio.Task] = []
+    def __bool__(self):
+        """Check if there are tasks in the list"""
+        return bool(self.tasks)
 
-    def append(self, *tasks: asyncio.Task, remove_when_done=True):
+    def __len__(self):
+        return len(self.tasks)
+
+    def __init__(self) -> None:
+        self.tasks: list[asyncio.Task] = list()
+
+    def add(self, *tasks: asyncio.Task, remove_when_done=True) -> None:
         """Add reference to tasks
 
         :param tasks: tasks to add
@@ -38,7 +48,7 @@ class TaskList:
                 task.add_done_callback(self.remove)
                 self.tasks.append(task)
 
-    def remove(self, *tasks: asyncio.Task):
+    def remove(self, *tasks: asyncio.Task) -> None:
         """Remove references to tasks
         :param tasks: tasks to remove
         :type tasks: asyncio.Task
@@ -47,13 +57,14 @@ class TaskList:
             try:
                 self.tasks.remove(task)
             except ValueError:
-                pass
+                _LOGGER.exception("Failed to remove task %s", task)
 
-    async def wait(self, *args, **kwargs):
+    async def wait(self, *args, **kwargs) -> None:
         """Wait for tasks. Wrapper around :func:`~asyncio.wait`"""
         try:
-            return await asyncio.wait(self.tasks, *args, **kwargs)
+            await asyncio.wait(self.tasks, *args, **kwargs)
         except ValueError:
+            _LOGGER.exception("Failed to wait for tasks")
             pass
 
     def cancel(self):

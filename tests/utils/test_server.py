@@ -26,13 +26,13 @@ class TestServer:
 
     async def _handler(self, websocket: ServerConnection):
         """Websocket handler to emulate HRV"""
-        with task_manager(cancel_on_exit=True) as task_list:
+        async with task_manager(cancel_on_exit=True) as task_list:
             message = await websocket.recv()
             _LOGGER.debug("Received %s", message)
             task = self._loop.create_task(
                 data_generator(websocket), name="data_generator"
             )
-            task_list.append(task)
+            task_list.add(task)
             await task_list.wait(return_when=asyncio.ALL_COMPLETED)
 
     def __init__(self, host, port, loop=None):

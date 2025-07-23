@@ -1,7 +1,4 @@
-"""
-    Configure testing
-"""
-
+"""Configure testing"""
 
 import pytest_asyncio
 

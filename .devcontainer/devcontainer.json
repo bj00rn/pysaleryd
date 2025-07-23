@@ -16,10 +16,10 @@
                     // best approach). You might also prefer to only set this option
                     // per-workspace (wherever coverage is used).
                     "--no-cov",
-                    "-o",
-                    "log_cli=1",
+                    //"-o",
+                    //"log_cli=1",
                     "--timeout=300",
-                    "--verbose",
+                    //"--verbose",
                     "--import-mode=prepend"
                 ],
                 "autoDocstring.docstringFormat": "sphinx",
@@ -37,10 +37,10 @@
         }
     },
     "remoteEnv": {
-        "PYTHONPATH": "/workspaces/pysaleryd/src"
+        "PYTHONPATH": "${workspaceFolder}/src"
     },
     "containerEnv": {
-        "PYTHONPATH": "/workspaces/pysaleryd/src"
+        "PYTHONPATH": "${workspaceFolder}/src"
     },
     "postCreateCommand": "./.devcontainer/scripts/setup.sh",
     "forwardPorts": [
