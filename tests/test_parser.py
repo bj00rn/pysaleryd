@@ -75,11 +75,22 @@ def test_parse_system_property():
     assert parsed.value == 1
 
     m.payload = "1+ 2+ 3+0"
-    parsed = SystemProperty.from_message(m)
+    parsed = SystemProperty.from_str(m.key, m.payload)
     assert parsed.value == 1
     assert parsed.min_value == 2
     assert parsed.max_value == 3
 
     m.payload = "test"
-    parsed = SystemProperty.from_message(m)
+    parsed = SystemProperty.from_str(m.key, m.payload)
     assert parsed.value == "test"
+
+
+def test_parse_system_property_with_extra():
+    """Test parse SystemProperty with extra value"""
+    m = Message(DataKey.INSTALLER_PASSWORD, "1+ 2+ 3+ 4+")
+    parsed = SystemProperty.from_str(m.key, m.payload)
+    assert parsed.key == DataKey.INSTALLER_PASSWORD
+    assert parsed.value == 1
+    assert parsed.min_value == 2
+    assert parsed.max_value == 3
+    assert parsed.extra == 4

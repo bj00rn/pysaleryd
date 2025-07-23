@@ -61,11 +61,7 @@ class Message(BaseMessage):
         return f"{ps.MESSAGE_START}{context}{self.key}{ps.PAYLOAD_START}{self.payload}{ps.MESSAGE_END}"  # noqa: E501
 
 
-class BaseSystemProperty:
-    """HRV System property"""
-
-
-class SystemProperty(BaseSystemProperty):
+class SystemProperty:
     """HRV System property with value, min, max"""
 
     def __init__(
@@ -83,7 +79,11 @@ class SystemProperty(BaseSystemProperty):
         self.extra = extra
 
     @classmethod
-    def from_message(cls, message: Message):
+    def from_message(cls, message: Message) -> SystemProperty:
+        return cls.from_str(message.key, message.payload)
+
+    @classmethod
+    def from_str(cls, key: DataKey, payload: str) -> SystemProperty:
         """Create instance from from string"""
 
         def maybe_cast(x: str) -> int | float | str | None:
@@ -96,23 +96,16 @@ class SystemProperty(BaseSystemProperty):
                 return float(x)
             return x
 
-        [*positions] = [maybe_cast(v.strip()) for v in message.payload.split("+")]
+        [*positions] = [maybe_cast(v.strip()) for v in payload.split("+")]
 
         value = positions[0] if len(positions) > 0 else None
         min_value = positions[1] if len(positions) > 1 else None
         max_value = positions[2] if len(positions) > 2 else None
         extra = positions[3] if len(positions) > 3 else None
-        return cls(message.key, value, min_value, max_value, extra)
-
-    def to_str(self) -> str:
-        """Convert to string"""
-        ps = MessageSeparator
-        if self.min_value is not None and self.max_value is not None:
-            return f"{ps.MESSAGE_START}{self.key}+{self.value}+{self.min_value}+{self.max_value}{ps.MESSAGE_END}"  # noqa: E501
-        return f"{ps.MESSAGE_START}{self.key}{ps.PAYLOAD_START}{str(self.value)}{ps.MESSAGE_END}"  # noqa: E501
+        return cls(key, value, min_value, max_value, extra)
 
 
-class ErrorSystemProperty(BaseSystemProperty):
+class ErrorSystemProperty:
     """HRV System error property"""
 
     def __init__(self, key: DataKey, value: list[str] | None = None):

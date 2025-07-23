@@ -137,4 +137,4 @@ async def test_disconnect(hrv_client: "Client", caplog):
     await asyncio.sleep(1)
     hrv_client.close()
     await asyncio.sleep(5)
-    await has_state(hrv_client, None)
+    await has_state(hrv_client, State.CLOSED)
