@@ -1,10 +1,10 @@
 """Utils"""
+
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 
-from .const import DataKey, MessageType, PayloadSeparator
+from .const import DataKey, MessageContext, MessageSeparator
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -13,55 +13,52 @@ class ParseError(BaseException):
     """Parse error. Raised when message parsing fails"""
 
 
-@dataclass
-class OutgoingMessage:
-    """Outgoing message to system"""
-
-    key: DataKey
-    value: str | int
-
-    def __str__(self):
-        ps = PayloadSeparator
-        return f"{ps.MESSAGE_START}{self.key}{ps.PAYLOAD_START}{self.value}{ps.MESSAGE_END}"  # noqa: E501
+class UnsupportedMessageType(BaseException):
+    """Unsupported message type. Raised when message type is not supported"""
 
 
-class IncomingMessage:
-    """Incoming message from system"""
+class BaseMessage:
+    """Base message class"""
 
-    @staticmethod
-    def from_str(msg: str) -> tuple[DataKey, str, MessageType]:
-        """Parse message string
+    def __init__(
+        self,
+        key: str | DataKey,
+        payload: str,
+        message_context: MessageContext = MessageContext.NONE,
+    ):
+        self.key = DataKey(key)
+        self.payload = payload
+        self.message_context = message_context
 
-        Args:
-            msg (str): raw message
 
-        Raises:
-            ParseError: if parsing fails
+class Message(BaseMessage):
+    """Message from HRV system"""
 
-        Returns:
-            (key, value, message_type): parsed message key and value
-        """
-        if msg[0] != PayloadSeparator.MESSAGE_START:
-            raise ParseError(f"Unsupported payload, {msg}")
-        else:
-            msg = msg[1::]
+    @classmethod
+    def decode(cls, msg: str) -> Message:
+        """Decode message from string"""
         try:
+            message_context = MessageContext.from_str(msg)
+            msg = msg[1::]  # remove first character (message start)
+
             [key, payload] = [
-                v.strip() for v in msg.split(PayloadSeparator.PAYLOAD_START, 1)
+                v.strip() for v in msg.split(MessageSeparator.PAYLOAD_START, 1)
             ]
 
-            if key[0] in [PayloadSeparator.ACK_ERROR, PayloadSeparator.ACK_OK]:
-                return (
-                    DataKey(key[1::]),
-                    payload,
-                    MessageType.ACK_OK
-                    if key[0] == PayloadSeparator.ACK_OK
-                    else MessageType.ACK_ERROR,
-                )
-            else:
-                return (DataKey(key), payload, MessageType.MESSAGE)
+            if message_context in [MessageContext.ACK_OK, MessageContext.ACK_ERROR]:
+                key = DataKey(key[1::])  # remove first character (ACK type)
+
+            return cls(key, payload, message_context)
+        except ValueError as exc:
+            raise UnsupportedMessageType() from exc
         except Exception as exc:
             raise ParseError(f"Failed to parse message {msg}") from exc
+
+    def encode(self) -> str:
+        """Encode message to string"""
+        ps = MessageSeparator
+        context = self.message_context._encode()
+        return f"{ps.MESSAGE_START}{context}{self.key}{ps.PAYLOAD_START}{self.payload}{ps.MESSAGE_END}"  # noqa: E501
 
 
 class BaseSystemProperty:
@@ -86,7 +83,7 @@ class SystemProperty(BaseSystemProperty):
         self.extra = extra
 
     @classmethod
-    def from_str(cls, key: DataKey, raw_value: str):
+    def from_message(cls, message: Message):
         """Create instance from from string"""
 
         def maybe_cast(x: str) -> int | float | str | None:
@@ -99,21 +96,17 @@ class SystemProperty(BaseSystemProperty):
                 return float(x)
             return x
 
-        [*positions] = (
-            [maybe_cast(v.strip()) for v in raw_value.split("+")]
-            if raw_value is not None
-            else []
-        )
+        [*positions] = [maybe_cast(v.strip()) for v in message.payload.split("+")]
 
         value = positions[0] if len(positions) > 0 else None
         min_value = positions[1] if len(positions) > 1 else None
         max_value = positions[2] if len(positions) > 2 else None
         extra = positions[3] if len(positions) > 3 else None
-        return cls(key, value, min_value, max_value, extra)
+        return cls(message.key, value, min_value, max_value, extra)
 
     def to_str(self) -> str:
         """Convert to string"""
-        ps = PayloadSeparator
+        ps = MessageSeparator
         if self.min_value is not None and self.max_value is not None:
             return f"{ps.MESSAGE_START}{self.key}+{self.value}+{self.min_value}+{self.max_value}{ps.MESSAGE_END}"  # noqa: E501
         return f"{ps.MESSAGE_START}{self.key}{ps.PAYLOAD_START}{str(self.value)}{ps.MESSAGE_END}"  # noqa: E501

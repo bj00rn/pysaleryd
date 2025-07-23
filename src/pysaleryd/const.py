@@ -1,18 +1,11 @@
 """Constants"""
 
-from enum import IntEnum, StrEnum
+from __future__ import annotations
+
+from enum import StrEnum
 
 
-class MessageType(IntEnum):
-    """Message type"""
-
-    ACK_OK = 0
-    ACK_ERROR = 1
-    MESSAGE = 2
-    RAW = 3
-
-
-class PayloadSeparator(StrEnum):
+class MessageSeparator(StrEnum):
     """Message payload separator"""
 
     ACK_OK = "$"
@@ -20,6 +13,40 @@ class PayloadSeparator(StrEnum):
     MESSAGE_START = "#"
     PAYLOAD_START = ":"
     MESSAGE_END = "\r"
+
+
+class MessageContext(StrEnum):
+    """Message context"""
+
+    ACK_OK = "ACK_OK"
+    ACK_ERROR = "ACK_ERROR"
+    NONE = "NONE"
+
+    @classmethod
+    def from_str(cls, message: str) -> MessageContext:
+        """Decode message context from string"""
+        pos1 = message[0]
+        pos2 = message[1]
+        if pos1 == MessageSeparator.MESSAGE_START:
+            if pos2 == MessageSeparator.ACK_OK:
+                return MessageContext.ACK_OK
+            elif pos2 == MessageSeparator.ACK_ERROR:
+                return MessageContext.ACK_ERROR
+            else:
+                return MessageContext.NONE
+        else:
+            raise ValueError(f"Invalid message context: {message}")
+
+    def _encode(self) -> str:
+        """Encode message context to string"""
+        if self == MessageContext.ACK_OK:
+            return MessageSeparator.ACK_OK
+        elif self == MessageContext.ACK_ERROR:
+            return MessageSeparator.ACK_ERROR
+        elif self == MessageContext.NONE:
+            return ""
+        else:
+            raise ValueError(f"Invalid message context: {self}")
 
 
 class DataKey(StrEnum):
@@ -50,14 +77,16 @@ class DataKey(StrEnum):
 
     # Vectors x+ x+ x+x
     BOOST_MODE_MINUTES = "FH"
-    FIREPLACE_MODE_MINUTES = "MC"
     CONTROL_SYSTEM_STATE = "MP"
-    MODE_HEATER_POWER_RATING = "MG"
     COOLING_MODE = "MK"
     FIREPLACE_MODE = "MB"
+    FIREPLACE_MODE_MINUTES = "MC"
     MODE_FAN = "MF"
+    MODE_HEATER = "MH"
+    MODE_HEATER_POWER_RATING = "MG"
     MODE_TEMPERATURE = "MT"
     TARGET_TEMPERATURE_COOL = "TF"
     TARGET_TEMPERATURE_ECONOMY = "TE"
     TARGET_TEMPERATURE_NORMAL = "TD"
-    MODE_HEATER = "MH"
+
+    NONE = ""

@@ -1,4 +1,5 @@
 """Client tests"""
+
 import asyncio
 import logging
 from typing import TYPE_CHECKING
@@ -31,7 +32,7 @@ async def has_state(client: Client, state: State | None):
 @pytest_asyncio.fixture(name="hrv_client")
 async def _hrv_client(ws_server: "TestServer"):
     """HRV Client"""
-    with Client("localhost", 3001, 3, connect_timeout=3) as client:
+    async with Client("localhost", 3001, 3, connect_timeout=3) as client:
         yield client
 
 
@@ -116,7 +117,7 @@ async def test_connect_unresponsive(ws_server: "TestServer", caplog):
     await ws_server.close()
     await asyncio.sleep(1)
     client = Client("localhost", 3001, 3, 1)
-    client.connect()
+    await client.connect()
     await asyncio.sleep(1)
     await ws_server.start()
     await asyncio.wait_for(has_state(client, State.OPEN), 15)
