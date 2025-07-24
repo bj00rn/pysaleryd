@@ -13,4 +13,4 @@ known_first_party = ["pysaleryd"]
 profile = "black"
 
 [tool.pysaleryd]
-version = "7.3.0"
+version = "7.3.1"
