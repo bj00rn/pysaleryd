@@ -62,7 +62,7 @@ class Message(BaseMessage):
 
 
 class SystemProperty:
-    """HRV System property with value, min, max"""
+    """HRV System property with value, min, max and extra values"""
 
     def __init__(
         self,
@@ -83,7 +83,7 @@ class SystemProperty:
         return cls.from_str(message.key, message.payload)
 
     @classmethod
-    def from_str(cls, key: DataKey, payload: str) -> SystemProperty:
+    def from_str(cls, key: DataKey, payload: str | None) -> SystemProperty:
         """Create instance from from string"""
 
         def maybe_cast(x: str) -> int | float | str | None:
@@ -96,12 +96,16 @@ class SystemProperty:
                 return float(x)
             return x
 
-        [*positions] = [maybe_cast(v.strip()) for v in payload.split("+")]
+        if payload is None:
+            return cls(key)
 
-        value = positions[0] if len(positions) > 0 else None
-        min_value = positions[1] if len(positions) > 1 else None
-        max_value = positions[2] if len(positions) > 2 else None
-        extra = positions[3] if len(positions) > 3 else None
+        # split by + and strip each part
+        [*positions] = [v.strip() for v in payload.split("+")]
+
+        value = maybe_cast(positions[0]) if len(positions) > 0 else None
+        min_value = maybe_cast(positions[1]) if len(positions) > 1 else None
+        max_value = maybe_cast(positions[2]) if len(positions) > 2 else None
+        extra = maybe_cast(positions[3]) if len(positions) > 3 else None
         return cls(key, value, min_value, max_value, extra)
 
 
