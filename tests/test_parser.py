@@ -94,3 +94,13 @@ def test_parse_system_property_with_extra():
     assert parsed.min_value == 2
     assert parsed.max_value == 3
     assert parsed.extra == 4
+
+
+def test_parse_system_property_with_extra_and_no_value():
+    """Test parse SystemProperty with extra value and no value"""
+    parsed = SystemProperty.from_str(DataKey.AIR_TEMPERATURE_AT_HEATER, None)
+    assert parsed.key == DataKey.AIR_TEMPERATURE_AT_HEATER
+    assert parsed.value is None
+    assert parsed.min_value is None
+    assert parsed.max_value is None
+    assert parsed.extra is None
