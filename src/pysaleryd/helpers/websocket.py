@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Callable, Coroutine
 
-from websockets.asyncio.client import ClientConnection, connect
+from websockets.asyncio.client import ClientConnection, connect, process_exception
 from websockets.exceptions import ConnectionClosed
 from websockets.protocol import State
 
@@ -21,7 +21,9 @@ class ReconnectingWebsocketClient:
         host: str,
         port: int,
         on_message: Callable[[str], Coroutine[None, str, None]],
-        on_state_change: Callable[[str], Coroutine[None, State, None]] | None = None,
+        on_state_change: (
+            Callable[[State | None], Coroutine[None, State | None, None]] | None
+        ) = None,
         on_connect: Callable[[], Coroutine[None, None, None]] | None = None,
         connect_timeout=15,
     ):
@@ -34,6 +36,7 @@ class ReconnectingWebsocketClient:
         self._on_connect = on_connect
         self._tasks = TaskList()
         self._ws = None
+        self._initial_connect = asyncio.Event()
 
     @property
     def state(self) -> State | None:
@@ -42,7 +45,7 @@ class ReconnectingWebsocketClient:
             return self._ws.protocol.state
         return None
 
-    async def __do_on_state_change(self):
+    async def __do_on_state_change(self) -> None:
         try:
             if callable(self._on_state_change):
                 if isinstance(result := self._on_state_change(self.state), Coroutine):
@@ -50,7 +53,7 @@ class ReconnectingWebsocketClient:
         except BaseException:
             _LOGGER.exception("Error calling on_state_change")
 
-    async def __do_on_message(self, message: str):
+    async def __do_on_message(self, message: str) -> None:
         try:
             if callable(self._on_message):
                 if isinstance(result := self._on_message(message), Coroutine):
@@ -58,7 +61,7 @@ class ReconnectingWebsocketClient:
         except BaseException:
             _LOGGER.exception("Error calling on_message")
 
-    async def __do_on_connect(self):
+    async def __do_on_connect(self) -> None:
         try:
             if callable(self._on_connect):
                 if isinstance(result := self._on_connect(), Coroutine):
@@ -70,17 +73,29 @@ class ReconnectingWebsocketClient:
         """Add message to send queue"""
         await self._outgoing_queue.put(message)
 
+    def __process_websocket_exception(self, e: Exception) -> Exception | None:
+        if not self._initial_connect.is_set():
+            # Return exception if initial connection fails
+            _LOGGER.debug("Initial connection failed: %s", e)
+            return e
+        else:
+            return process_exception(e)
+
     async def __runner(self):
         """Send and receive messages on websocket"""
         try:
             uri = f"ws://{self._host}:{self._port}"
             _LOGGER.info("Connecting to %s", uri)
             async for websocket in connect(
-                uri, open_timeout=self._connect_timeout, ping_interval=None
+                uri,
+                open_timeout=self._connect_timeout,
+                ping_interval=None,
+                process_exception=self.__process_websocket_exception,
             ):
                 try:
                     self._ws = websocket
                     _LOGGER.info("Connection established to %s", uri)
+                    self._initial_connect.set()
                     await self.__do_on_connect()
                     await self.__do_on_state_change()
                     async with task_manager(cancel_on_exit=True) as ws_tasks:
@@ -110,8 +125,10 @@ class ReconnectingWebsocketClient:
         except asyncio.CancelledError:
             _LOGGER.debug("Shutting down connection to %s", uri)
             raise
+        except OSError:
+            raise
 
-    async def __consumer(self, ws: ClientConnection):
+    async def __consumer(self, ws: ClientConnection) -> None:
         """Enqueue messages received on websocket"""
         try:
             async for message in ws:
@@ -122,7 +139,7 @@ class ReconnectingWebsocketClient:
             _LOGGER.debug("Consumer was cancelled")
             raise
 
-    async def __producer(self, ws: ClientConnection):
+    async def __producer(self, ws: ClientConnection) -> None:
         """Send queued messages on websocket"""
         try:
             while True:
@@ -134,7 +151,7 @@ class ReconnectingWebsocketClient:
             _LOGGER.debug("Producer cancelled")
             raise
 
-    async def __keepalive(self, websocket, pong_interval=float(30)):
+    async def __keepalive(self, websocket, pong_interval=float(30)) -> None:
         while True:
             await asyncio.sleep(pong_interval)
             try:
@@ -144,20 +161,33 @@ class ReconnectingWebsocketClient:
                 _LOGGER.warning("Connection closed during keepalive, stopping")
                 raise
 
-    async def connect(self):
+    async def connect(self) -> None:
         """Connect to server"""
+
+        async def waiter(did_connect: asyncio.Event):
+            async with asyncio.timeout(self._connect_timeout + 1):
+                """Wait for connection to be established"""
+                while True:
+                    if did_connect.is_set():
+                        break
+                    await asyncio.sleep(1)
+
         if not self._tasks:
             runner_task = asyncio.create_task(self.__runner(), name="runner")
             self._tasks.add(runner_task)
+            await asyncio.create_task(waiter(self._initial_connect), name="waiter")
         else:
             _LOGGER.warning("Already connected to %s:%s", self._host, self._port)
 
-    def close(self):
+    async def close(self):
         """Close connection and perform clean up"""
-        self._tasks.cancel()
+        await self._tasks.cancel()
+        self._tasks.clear()
+        self._ws = None
 
-    def __enter__(self):
-        self.connect()
+    async def __aenter__(self):
+        await self.connect()
+        return self
 
-    def __exit__(self, *args, **kwargs):
-        self.close()
+    async def __aexit__(self, *args, **kwargs):
+        await self.close()
