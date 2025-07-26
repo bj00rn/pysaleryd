@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from typing import Iterator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,17 +20,21 @@ async def task_manager(*args, cancel_on_exit=False, **kwargs):
         yield task_list
     finally:
         if cancel_on_exit:
-            task_list.cancel()
+            await task_list.cancel()
 
 
 class TaskList:
     """Helper class to keep references and work with Tasks"""
 
-    def __bool__(self):
+    def __iter__(self) -> Iterator[asyncio.Task]:
+        """Iterate over tasks"""
+        return iter(self.tasks)
+
+    def __bool__(self) -> bool:
         """Check if there are tasks in the list"""
         return bool(self.tasks)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.tasks)
 
     def __init__(self) -> None:
@@ -57,7 +62,7 @@ class TaskList:
             try:
                 self.tasks.remove(task)
             except ValueError:
-                _LOGGER.exception("Failed to remove task %s", task)
+                _LOGGER.debug("Failed to remove task %s", task)
 
     async def wait(self, *args, **kwargs) -> None:
         """Wait for tasks. Wrapper around :func:`~asyncio.wait`"""
@@ -67,7 +72,12 @@ class TaskList:
             _LOGGER.exception("Failed to wait for tasks")
             pass
 
-    def cancel(self):
+    async def cancel(self) -> None:
         """Cancel all tasks"""
         for task in self.tasks:
             task.cancel()
+        await self.wait()
+
+    def clear(self) -> None:
+        """Clear task list"""
+        self.tasks.clear()
