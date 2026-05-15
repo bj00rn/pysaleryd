@@ -18,7 +18,7 @@ class PayloadSeparatorEnum(StrEnum):
 class DataKeyEnum(StrEnum):
     """Data key enumerator"""
 
-    # Scalar
+    # Scalars
     AIR_TEMPERATURE_AT_HEATER = "*TK"
     AIR_TEMPERATURE_SUPPLY = "*TC"
     CONTROL_SYSTEM_VERSION = "*SC"
@@ -41,14 +41,18 @@ class DataKeyEnum(StrEnum):
     INSTALLER_PHONE = "IC"
     INSTALLER_WEBSITE = "IE"
 
-    # Values
+    # Vectors x+ x+ x+x
+    BOOST_MODE_MINUTES = "FH"
     CONTROL_SYSTEM_STATE = "MP"
-    MODE_HEATER_POWER_RATING = "MG"
     COOLING_MODE = "MK"
     FIREPLACE_MODE = "MB"
+    FIREPLACE_MODE_MINUTES = "MC"
     MODE_FAN = "MF"
+    MODE_HEATER = "MH"
+    MODE_HEATER_POWER_RATING = "MG"
     MODE_TEMPERATURE = "MT"
     TARGET_TEMPERATURE_COOL = "TF"
     TARGET_TEMPERATURE_ECONOMY = "TE"
     TARGET_TEMPERATURE_NORMAL = "TD"
-    MODE_HEATER = "MH"
+
+    NONE = ""
