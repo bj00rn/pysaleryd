@@ -1,4 +1,5 @@
 """Client tests"""
+
 import asyncio
 import typing
 

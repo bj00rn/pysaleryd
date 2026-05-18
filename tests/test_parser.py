@@ -15,21 +15,21 @@ _LOGGER = logging.getLogger(__name__)
 
 def test_parse_int_from_list_str():
     """Test parsing int list"""
-    (key, value, message_type) = IncomingMessage.from_str("#MF: 1+ 0+ 2+30\r")
+    key, value, message_type = IncomingMessage.from_str("#MF: 1+ 0+ 2+30\r")
     assert key == DataKeyEnum.MODE_FAN
     assert isinstance(value, str)
     assert message_type == MessageTypeEnum.MESSAGE
 
 
 def test_parse_ack():
-    (key, value, message_type) = IncomingMessage.from_str("#$MF:  1+  0+  2+0\r")
+    key, value, message_type = IncomingMessage.from_str("#$MF:  1+  0+  2+0\r")
     assert key == "MF"
     assert isinstance(value, str)
     assert message_type == MessageTypeEnum.ACK_OK
 
 
 def test_parse_ack_error():
-    (key, value, message_type) = IncomingMessage.from_str("#!MF:\r")
+    key, value, message_type = IncomingMessage.from_str("#!MF:\r")
     assert key == "MF"
     assert isinstance(value, str)
     assert message_type == MessageTypeEnum.ACK_ERROR
@@ -37,7 +37,7 @@ def test_parse_ack_error():
 
 def test_parse_int_from_str():
     """Test parsing int"""
-    (key, value, message_type) = IncomingMessage.from_str("#*XX:0\r")
+    key, value, message_type = IncomingMessage.from_str("#*XX:0\r")
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "0"
@@ -46,13 +46,13 @@ def test_parse_int_from_str():
 
 def test_parse_str_from_str():
     """Test parsing str"""
-    (key, value, message_type) = IncomingMessage.from_str("#*XX:xxx\r")
+    key, value, message_type = IncomingMessage.from_str("#*XX:xxx\r")
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "xxx"
     assert message_type == MessageTypeEnum.MESSAGE
 
-    (key, value, message_type) = IncomingMessage.from_str("#*XX:    1.x.1\r")
+    key, value, message_type = IncomingMessage.from_str("#*XX:    1.x.1\r")
     assert key == "*XX"
     assert isinstance(value, str)
     assert value == "1.x.1"

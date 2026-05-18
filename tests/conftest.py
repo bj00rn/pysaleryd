@@ -1,6 +1,7 @@
 """
-    Configure testing
+Configure testing
 """
+
 import asyncio
 
 import pytest

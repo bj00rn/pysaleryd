@@ -1,4 +1,5 @@
 """Utils"""
+
 from __future__ import annotations
 
 import logging
@@ -58,9 +59,11 @@ class IncomingMessage:
                 return (
                     key[1::],
                     payload,
-                    MessageTypeEnum.ACK_OK.value
-                    if key[0] == PayloadSeparatorEnum.ACK_OK
-                    else MessageTypeEnum.ACK_ERROR.value,
+                    (
+                        MessageTypeEnum.ACK_OK.value
+                        if key[0] == PayloadSeparatorEnum.ACK_OK
+                        else MessageTypeEnum.ACK_ERROR.value
+                    ),
                 )
             else:
                 return (key, payload, MessageTypeEnum.MESSAGE.value)

@@ -79,7 +79,7 @@ class Client:
                 msg = await self._incoming_queue.get()
                 # update state
                 # if ack force push state to handler
-                (key, value, message_type) = IncomingMessage.from_str(msg)
+                key, value, message_type = IncomingMessage.from_str(msg)
 
                 if key in [
                     DataKeyEnum.ERROR_FRAME_START,
@@ -92,9 +92,9 @@ class Client:
                         self._error_cache.add(value)
                     if key == DataKeyEnum.ERROR_FRAME_END:
                         self._error_cache.end_frame()
-                        self._data[
-                            DataKeyEnum.ERROR_MESSAGE.value
-                        ] = self._error_cache.data
+                        self._data[DataKeyEnum.ERROR_MESSAGE.value] = (
+                            self._error_cache.data
+                        )
                 else:
                     self._data[key] = value
                     if message_type == MessageTypeEnum.ACK_OK:
