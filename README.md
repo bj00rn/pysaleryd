@@ -13,7 +13,7 @@ Python library for controlling Saleryd HRV system using the built-in websocket s
 | Model                | Supported control system versions | Unsupported control system versions |
 |----------------------|-----------------------------------|-------------------------------------|
 | LOKE LS-01/LT-01     | 4.1.5                             | <4.1.5                              |
-| LOKE LS-02/LT-02     | unknown support                   | unknown support                     |
+| LOKE LS-02/LT-02     | 4.1.5 (reported working)          | <4.1.5                              |
 
 ## Example usage
 
